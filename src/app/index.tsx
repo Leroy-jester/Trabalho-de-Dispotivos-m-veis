@@ -1,18 +1,22 @@
 import { Text, View, StyleSheet, Image } from "react-native";
-import logoImg from '@/assets/images/logo.png'
+import logoImg from "@/assets/images/logo.png";
 import Button from "@/components/button";
+import { Link } from "expo-router";
 
 export default function Index() {
   return (
     <View style={styles.container}>
       <View style={styles.logoContainer}>
-      <Image style={styles.logo} source={logoImg}></Image>
-
+        <Image style={styles.logo} source={logoImg}></Image>
       </View>
 
       <View style={styles.buttonContainer}>
-          <Button label="Entrar como dev" color="#7C3DE8"/> 
-          <Button label="Entrar como recrutador" color="#9D1212"/> 
+        <Link href="/dev-cadastro">
+          <Button label="Entrar como dev" color="#7C3DE8" />
+        </Link>
+        <Link href="/recrutador">
+          <Button label="Entrar como recrutador" color="#9D1212" />
+        </Link>
       </View>
     </View>
   );
@@ -23,17 +27,16 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#070707"
+    backgroundColor: "#070707",
   },
   logoContainer: {
-    marginBottom: 30
+    marginBottom: 30,
   },
   logo: {
     width: 300,
     height: 300,
   },
   buttonContainer: {
-    gap: 30
-  }
-
+    gap: 30,
+  },
 });
