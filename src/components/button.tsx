@@ -1,36 +1,39 @@
-import { Text, Pressable, View, StyleSheet, Image } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 
 type Props = {
-    label: string;
-    color: string;
-}
+  label: string;
+  color: string;
+  onPress?: () => void;
+};
 
-export default function Button({label, color}: Props) {
+export default function Button({ label, color, onPress }: Props) {
   return (
     <View style={styles.buttonContainer}>
-        <Pressable style={[styles.button, {backgroundColor: `${color}`}]}>
-            <Text style={styles.buttonLabel}>
-                {label}
-            </Text>
-        </Pressable>
+      <Pressable
+        style={[styles.button, { backgroundColor: color }]}
+        onPress={onPress}
+      >
+        <Text style={styles.buttonLabel}>{label}</Text>
+      </Pressable>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   buttonContainer: {
-    width: 250,
+    width: "100%",
   },
 
   button: {
-    display: "flex",
+    width: "100%",
     alignItems: "center",
+    justifyContent: "center",
     padding: 16,
     borderRadius: 4,
   },
 
   buttonLabel: {
     color: "#fff",
-    fontWeight: "600"
-  }
+    fontWeight: "600",
+  },
 });
