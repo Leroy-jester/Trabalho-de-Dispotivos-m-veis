@@ -1,5 +1,6 @@
 import CandidateCard from "@/components/candidate-card";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
+import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
   Modal,
@@ -73,6 +74,7 @@ export default function Recrutador() {
   const [descartados, setDescartados] = useState<string[]>([]);
   const [bioAberta, setBioAberta] = useState(false);
   const [proAberto, setProAberto] = useState(false);
+  const router = useRouter();
 
   const candidato = candidatos[indice];
 
@@ -96,7 +98,6 @@ export default function Recrutador() {
     setDescartados([]);
   }
 
-  // Estado exibido quando todos os candidatos foram avaliados.
   if (!candidato) {
     return (
       <View style={[styles.container, styles.estadoVazio]}>
@@ -123,7 +124,9 @@ export default function Recrutador() {
     <View style={styles.container}>
       {/* Cabeçalho */}
       <View style={styles.header}>
-        <Text style={styles.logo}>Devinder</Text>
+        <Text style={styles.logo} onPress={() => router.push("/")}>
+          Devinder
+        </Text>
 
         <Text style={styles.contador}>
           {indice + 1} de {candidatos.length}
@@ -132,6 +135,7 @@ export default function Recrutador() {
 
       {/* Card reutilizável */}
       <CandidateCard
+        key={candidato.id}
         candidato={candidato}
         fotoIndex={fotoIndex}
         onFotoChange={setFotoIndex}

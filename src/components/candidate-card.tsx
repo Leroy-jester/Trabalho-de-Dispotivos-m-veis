@@ -1,10 +1,24 @@
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
+
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
+
+import Animated, {
+    Extrapolation,
+    interpolate,
+    runOnJS,
+    useAnimatedStyle,
+    useSharedValue,
+    withSpring,
+    withTiming,
+} from "react-native-reanimated";
+
 import {
-  ImageBackground,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
+    ImageBackground,
+    Pressable,
+    StyleSheet,
+    Text,
+    useWindowDimensions,
+    View,
 } from "react-native";
 
 type Candidato = {
@@ -34,99 +48,167 @@ export default function CandidateCard({
   onReject,
   onApprove,
 }: Props) {
+  const translateX = useSharedValue(0);
+  const { width } = useWindowDimensions();
+
+  const panGesture = Gesture.Pan()
+    .activeOffsetX([-10, 10])
+    .onUpdate((event) => {
+      translateX.value = event.translationX;
+    })
+    .onEnd((event) => {
+      const passouDoLimite = Math.abs(event.translationX) > width * 0.25;
+
+      const movimentoRapido = Math.abs(event.velocityX) > 900;
+
+      if (passouDoLimite || movimentoRapido) {
+        const direcao =
+          event.translationX !== 0
+            ? event.translationX > 0
+              ? 1
+              : -1
+            : event.velocityX > 0
+              ? 1
+              : -1;
+
+        translateX.value = withTiming(
+          direcao * (width + 100),
+          { duration: 220 },
+          (finished) => {
+            if (finished) {
+              if (direcao > 0) {
+                runOnJS(onApprove)();
+              } else {
+                runOnJS(onReject)();
+              }
+            }
+          },
+        );
+      } else {
+        translateX.value = withSpring(0);
+      }
+    });
+
+  const animatedCardStyle = useAnimatedStyle(() => {
+    const rotacao = interpolate(
+      translateX.value,
+      [-width, 0, width],
+      [-12, 0, 12],
+      Extrapolation.CLAMP,
+    );
+
+    const opacidade = interpolate(
+      Math.abs(translateX.value),
+      [0, width],
+      [1, 0.75],
+      Extrapolation.CLAMP,
+    );
+
+    return {
+      transform: [
+        { translateX: translateX.value },
+        { rotate: `${rotacao}deg` },
+      ],
+      opacity: opacidade,
+    };
+  });
+
   return (
     <View style={styles.wrapper}>
-      <View style={styles.card}>
-        <ImageBackground
-          key={`${candidato.id}-${fotoIndex}`}
-          source={{ uri: candidato.fotos[fotoIndex] }}
-          style={styles.foto}
-          imageStyle={styles.imagem}
-          resizeMode="cover"
-        >
-          <View style={styles.fotoIndicadores}>
-            {candidato.fotos.map((_, index) => (
-              <Pressable
-                key={index}
-                style={styles.areaIndicador}
-                onPress={() => onFotoChange(index)}
-              >
-                <View
-                  style={[
-                    styles.indicador,
-                    {
-                      backgroundColor:
-                        index === fotoIndex
-                          ? "#FFFFFF"
-                          : "rgba(255,255,255,0.45)",
-                    },
-                  ]}
-                />
-              </Pressable>
-            ))}
-          </View>
-
-          <View style={styles.navegacaoFotos}>
-            <Pressable
-              accessibilityLabel="Foto anterior"
-              style={styles.areaFoto}
-              onPress={() =>
-                onFotoChange(
-                  fotoIndex === 0 ? candidato.fotos.length - 1 : fotoIndex - 1,
-                )
-              }
-            />
-
-            <Pressable
-              accessibilityLabel="Próxima foto"
-              style={styles.areaFoto}
-              onPress={() =>
-                onFotoChange((fotoIndex + 1) % candidato.fotos.length)
-              }
-            />
-          </View>
-
-          <View style={styles.informacoes}>
-            <Text style={styles.nome}>
-              {candidato.nome}, {candidato.idade}
-            </Text>
-
-            <Text style={styles.localizacao}>
-              <MaterialCommunityIcons
-                name="map-marker"
-                size={16}
-                color="#FFFFFF"
-              />{" "}
-              {candidato.localizacao}
-            </Text>
-
-            <Text style={styles.resumo} numberOfLines={2}>
-              {candidato.sobre}
-            </Text>
-
-            <View style={styles.tags}>
-              {candidato.linguagens.split(", ").map((linguagem) => (
-                <View key={linguagem} style={styles.tag}>
-                  <Text style={styles.textoTag}>{linguagem}</Text>
-                </View>
+      <GestureDetector gesture={panGesture}>
+        <Animated.View style={[styles.card, animatedCardStyle]}>
+          <ImageBackground
+            key={`${candidato.id}-${fotoIndex}`}
+            source={{ uri: candidato.fotos[fotoIndex] }}
+            style={styles.foto}
+            imageStyle={styles.imagem}
+            resizeMode="cover"
+          >
+            <View style={styles.fotoIndicadores}>
+              {candidato.fotos.map((_, index) => (
+                <Pressable
+                  key={index}
+                  style={styles.areaIndicador}
+                  onPress={() => onFotoChange(index)}
+                >
+                  <View
+                    style={[
+                      styles.indicador,
+                      {
+                        backgroundColor:
+                          index === fotoIndex
+                            ? "#FFFFFF"
+                            : "rgba(255,255,255,0.45)",
+                      },
+                    ]}
+                  />
+                </Pressable>
               ))}
             </View>
 
-            <Pressable
-              accessibilityLabel="Ver perfil completo"
-              style={styles.botaoDetalhes}
-              onPress={onShowDetails}
-            >
-              <MaterialCommunityIcons
-                name="chevron-up"
-                size={30}
-                color="#FFFFFF"
-              />
-              <Text style={styles.textoDetalhes}>Ver perfil completo</Text>
-            </Pressable>
-          </View>
-        </ImageBackground>
-      </View>
+            <View pointerEvents="box-none" style={styles.navegacaoFotos}>
+              <Pressable
+                accessibilityLabel="Foto anterior"
+                style={styles.controleFoto}
+                onPress={() =>
+                  onFotoChange(
+                    fotoIndex === 0
+                      ? candidato.fotos.length - 1
+                      : fotoIndex - 1,
+                  )
+                }
+              ></Pressable>
+
+              <Pressable
+                accessibilityLabel="Próxima foto"
+                style={styles.controleFoto}
+                onPress={() =>
+                  onFotoChange((fotoIndex + 1) % candidato.fotos.length)
+                }
+              ></Pressable>
+            </View>
+            <View style={styles.informacoes}>
+              <Text style={styles.nome}>
+                {candidato.nome}, {candidato.idade}
+              </Text>
+
+              <Text style={styles.localizacao}>
+                <MaterialCommunityIcons
+                  name="map-marker"
+                  size={16}
+                  color="#FFFFFF"
+                />{" "}
+                {candidato.localizacao}
+              </Text>
+
+              <Text style={styles.resumo} numberOfLines={2}>
+                {candidato.sobre}
+              </Text>
+
+              <View style={styles.tags}>
+                {candidato.linguagens.split(", ").map((linguagem) => (
+                  <View key={linguagem} style={styles.tag}>
+                    <Text style={styles.textoTag}>{linguagem}</Text>
+                  </View>
+                ))}
+              </View>
+
+              <Pressable
+                accessibilityLabel="Ver perfil completo"
+                style={styles.botaoDetalhes}
+                onPress={onShowDetails}
+              >
+                <MaterialCommunityIcons
+                  name="chevron-up"
+                  size={30}
+                  color="#FFFFFF"
+                />
+                <Text style={styles.textoDetalhes}>Ver perfil completo</Text>
+              </Pressable>
+            </View>
+          </ImageBackground>
+        </Animated.View>
+      </GestureDetector>
 
       <View style={styles.acoes}>
         <Pressable
@@ -193,7 +275,17 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     flexDirection: "row",
-    zIndex: 1,
+    justifyContent: "space-between",
+    alignItems: "center",
+    zIndex: 2,
+  },
+
+  controleFoto: {
+    width: 100,
+    height: "100%",
+    borderRadius: 20,
+    justifyContent: "center",
+    alignItems: "center",
   },
   areaFoto: {
     flex: 1,
