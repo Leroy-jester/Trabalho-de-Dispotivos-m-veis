@@ -80,6 +80,8 @@ type RecruitmentContextData = {
   aprovar: (id: string) => void;
   descartar: (id: string) => void;
   disparar: (id: string) => boolean;
+  ultimoDescartadoId: string | null;
+  desfazerDescarte: () => string | null;
 };
 
 const RecruitmentContext = createContext<RecruitmentContextData | undefined>(
@@ -91,6 +93,9 @@ export function RecruitmentProvider({ children }: { children: ReactNode }) {
   const [descartadosIds, setDescartadosIds] = useState<string[]>([]);
   const [prioritariosIds, setPrioritariosIds] = useState<string[]>([]);
   const [disparos, setDisparos] = useState(0);
+  const [ultimoDescartadoId, setUltimoDescartadoId] = useState<string | null>(
+    null,
+  );
 
   // Por enquanto, o plano é simulado como Free.
   const isPro = false;
@@ -101,6 +106,8 @@ export function RecruitmentProvider({ children }: { children: ReactNode }) {
     );
 
     setDescartadosIds((atuais) => atuais.filter((item) => item !== id));
+
+    setUltimoDescartadoId((atual) => (atual === id ? null : atual));
   }
 
   function descartar(id: string) {
@@ -111,6 +118,22 @@ export function RecruitmentProvider({ children }: { children: ReactNode }) {
     setAprovadosIds((atuais) => atuais.filter((item) => item !== id));
 
     setPrioritariosIds((atuais) => atuais.filter((item) => item !== id));
+
+    setUltimoDescartadoId(id);
+  }
+
+  function desfazerDescarte(): string | null {
+    const id = ultimoDescartadoId;
+
+    if (!id) {
+      return null;
+    }
+
+    setDescartadosIds((atuais) => atuais.filter((item) => item !== id));
+
+    setUltimoDescartadoId(null);
+
+    return id;
   }
 
   function disparar(id: string): boolean {
@@ -139,9 +162,11 @@ export function RecruitmentProvider({ children }: { children: ReactNode }) {
         prioritariosIds,
         disparos,
         isPro,
+        ultimoDescartadoId,
         aprovar,
         descartar,
         disparar,
+        desfazerDescarte,
       }}
     >
       {children}

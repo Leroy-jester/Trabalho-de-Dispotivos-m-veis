@@ -43,6 +43,8 @@ type Props = {
   onApprove: () => void;
   onFire: () => void;
   canFire: boolean;
+  onUndo: () => void;
+  isPro: boolean;
 };
 
 export default function CandidateCard({
@@ -54,6 +56,8 @@ export default function CandidateCard({
   onApprove,
   onFire,
   canFire,
+  onUndo,
+  isPro,
 }: Props) {
   const translateX = useSharedValue(0);
   const destaqueProgress = useSharedValue(0);
@@ -333,6 +337,23 @@ export default function CandidateCard({
 
       <View style={styles.acoes}>
         <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={
+            isPro
+              ? "Desfazer último descarte"
+              : "Desfazer último descarte (PRO)"
+          }
+          style={[styles.botaoAcao, styles.botaoRevert]}
+          onPress={onUndo}
+        >
+          <MaterialCommunityIcons
+            name="undo-variant"
+            size={26}
+            color={isPro ? "#B99AFF" : "#888888"}
+          />
+        </Pressable>
+
+        <Pressable
           accessibilityLabel="Rejeitar candidato"
           style={[styles.botaoAcao, styles.botaoRejeitar]}
           onPress={onReject}
@@ -485,7 +506,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 22,
+    gap: 14,
   },
   botaoAcao: {
     width: 54,
@@ -536,5 +557,9 @@ const styles = StyleSheet.create({
     fontWeight: "900",
     letterSpacing: 2,
     marginTop: 8,
+  },
+  botaoRevert: {
+    borderWidth: 1.5,
+    borderColor: "#777777",
   },
 });

@@ -16,7 +16,9 @@ export default function Recrutador() {
   const [indice, setIndice] = useState(0);
   const [fotoIndex, setFotoIndex] = useState(0);
   const [bioAberta, setBioAberta] = useState(false);
+  const [revertidoId, setRevertidoId] = useState<string | null>(null);
   const [proAberto, setProAberto] = useState(false);
+
   const {
     candidatos,
     aprovadosIds,
@@ -26,10 +28,14 @@ export default function Recrutador() {
     aprovar,
     descartar,
     disparar,
+    ultimoDescartadoId,
+    desfazerDescarte,
   } = useRecruitment();
   const router = useRouter();
 
-  const candidato = candidatos[indice];
+  const candidato = revertidoId
+    ? candidatos.find((item) => item.id === revertidoId)
+    : candidatos[indice];
 
   function avaliar(aprovado: boolean) {
     if (!candidato) return;
@@ -40,8 +46,7 @@ export default function Recrutador() {
       descartar(candidato.id);
     }
 
-    setIndice((atual) => atual + 1);
-    setFotoIndex(0);
+    avancar();
   }
 
   function darDisparo() {
@@ -60,6 +65,32 @@ export default function Recrutador() {
 
   function reiniciar() {
     setIndice(0);
+    setFotoIndex(0);
+  }
+
+  function avancar() {
+    if (revertidoId) {
+      setRevertidoId(null);
+    } else {
+      setIndice((atual) => atual + 1);
+    }
+
+    setFotoIndex(0);
+  }
+
+  function handleUndo() {
+    if (!isPro) {
+      setProAberto(true);
+      return;
+    }
+
+    const id = desfazerDescarte();
+
+    if (!id) {
+      return;
+    }
+
+    setRevertidoId(id);
     setFotoIndex(0);
   }
 
@@ -110,6 +141,8 @@ export default function Recrutador() {
         onApprove={() => avaliar(true)}
         onFire={darDisparo}
         canFire={isPro || disparos < 3}
+        onUndo={handleUndo}
+        isPro={isPro}
       />
 
       {/* Gaveta com os detalhes do candidato */}
