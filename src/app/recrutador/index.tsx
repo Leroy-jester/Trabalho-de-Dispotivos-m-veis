@@ -1,4 +1,5 @@
 import CandidateCard from "@/components/candidate-card";
+import { useRecruitment } from "@/contexts/recruitment-context";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useRouter } from "expo-router";
 import { useState } from "react";
@@ -11,69 +12,21 @@ import {
   View,
 } from "react-native";
 
-const candidatos = [
-  {
-    id: "1",
-    nome: "Ana Silva",
-    idade: 22,
-    localizacao: "Campo Grande, MS",
-    sobre:
-      "Desenvolvedora Front-end apaixonada por interfaces e experiências digitais.",
-    linguagens: "React, JavaScript, TypeScript",
-    formacao: "Análise e Desenvolvimento de Sistemas",
-    experiencia: "Desenvolvedora Front-end",
-    projetos: "Portfólio pessoal e aplicações web.",
-    pretensaoSalarial: "R$ 4.000,00",
-    fotos: [
-      "https://randomuser.me/api/portraits/women/44.jpg",
-      "https://randomuser.me/api/portraits/women/68.jpg",
-      "https://randomuser.me/api/portraits/women/65.jpg",
-    ],
-  },
-  {
-    id: "2",
-    nome: "Lucas Santos",
-    idade: 24,
-    localizacao: "Aquidauana, MS",
-    sobre:
-      "Desenvolvedor interessado em aplicações mobile e soluções inovadoras.",
-    linguagens: "React Native, Node.js, SQL",
-    formacao: "Sistemas para Internet",
-    experiencia: "Desenvolvedor Mobile",
-    projetos: "Aplicativos mobile e APIs.",
-    pretensaoSalarial: "R$ 5.000,00",
-    fotos: [
-      "https://randomuser.me/api/portraits/men/32.jpg",
-      "https://randomuser.me/api/portraits/men/75.jpg",
-      "https://randomuser.me/api/portraits/men/52.jpg",
-    ],
-  },
-  {
-    id: "3",
-    nome: "Marina Costa",
-    idade: 21,
-    localizacao: "Dourados, MS",
-    sobre: "Estudante de tecnologia que gosta de aprender novas ferramentas.",
-    linguagens: "Python, JavaScript, Git",
-    formacao: "Ciência da Computação",
-    experiencia: "Desenvolvedora Júnior",
-    projetos: "Projetos acadêmicos e aplicações Python.",
-    pretensaoSalarial: "R$ 3.500,00",
-    fotos: [
-      "https://randomuser.me/api/portraits/women/49.jpg",
-      "https://randomuser.me/api/portraits/women/33.jpg",
-      "https://randomuser.me/api/portraits/women/21.jpg",
-    ],
-  },
-];
-
 export default function Recrutador() {
   const [indice, setIndice] = useState(0);
   const [fotoIndex, setFotoIndex] = useState(0);
-  const [aprovados, setAprovados] = useState<string[]>([]);
-  const [descartados, setDescartados] = useState<string[]>([]);
   const [bioAberta, setBioAberta] = useState(false);
   const [proAberto, setProAberto] = useState(false);
+  const {
+    candidatos,
+    aprovadosIds,
+    descartadosIds,
+    disparos,
+    isPro,
+    aprovar,
+    descartar,
+    disparar,
+  } = useRecruitment();
   const router = useRouter();
 
   const candidato = candidatos[indice];
@@ -82,9 +35,23 @@ export default function Recrutador() {
     if (!candidato) return;
 
     if (aprovado) {
-      setAprovados((atual) => [...atual, candidato.id]);
+      aprovar(candidato.id);
     } else {
-      setDescartados((atual) => [...atual, candidato.id]);
+      descartar(candidato.id);
+    }
+
+    setIndice((atual) => atual + 1);
+    setFotoIndex(0);
+  }
+
+  function darDisparo() {
+    if (!candidato) return;
+
+    const conseguiuDisparar = disparar(candidato.id);
+
+    if (!conseguiuDisparar) {
+      setProAberto(true);
+      return;
     }
 
     setIndice((atual) => atual + 1);
@@ -94,8 +61,6 @@ export default function Recrutador() {
   function reiniciar() {
     setIndice(0);
     setFotoIndex(0);
-    setAprovados([]);
-    setDescartados([]);
   }
 
   if (!candidato) {
@@ -110,7 +75,7 @@ export default function Recrutador() {
         <Text style={styles.titulo}>Você viu todos!</Text>
 
         <Text style={styles.textoSecundario}>
-          {aprovados.length} aprovados · {descartados.length} descartados
+          {aprovadosIds.length} aprovados · {descartadosIds.length} descartados
         </Text>
 
         <Pressable style={styles.botaoReiniciar} onPress={reiniciar}>
@@ -129,7 +94,8 @@ export default function Recrutador() {
         </Text>
 
         <Text style={styles.contador}>
-          {indice + 1} de {candidatos.length}
+          {indice + 1} de {candidatos.length} · Disparos{" "}
+          {isPro ? "ilimitados" : `${disparos}/3`}
         </Text>
       </View>
 
@@ -142,6 +108,7 @@ export default function Recrutador() {
         onShowDetails={() => setBioAberta(true)}
         onReject={() => avaliar(false)}
         onApprove={() => avaliar(true)}
+        onFire={darDisparo}
       />
 
       {/* Gaveta com os detalhes do candidato */}
@@ -263,7 +230,7 @@ export default function Recrutador() {
       </Modal>
 
       <Text style={styles.rodape}>
-        {aprovados.length} aprovados · {descartados.length} descartados
+        {aprovadosIds.length} aprovados · {descartadosIds.length} descartados
       </Text>
     </View>
   );

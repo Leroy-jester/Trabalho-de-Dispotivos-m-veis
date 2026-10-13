@@ -38,6 +38,7 @@ type Props = {
   onShowDetails: () => void;
   onReject: () => void;
   onApprove: () => void;
+  onFire: () => void;
 };
 
 export default function CandidateCard({
@@ -47,6 +48,7 @@ export default function CandidateCard({
   onShowDetails,
   onReject,
   onApprove,
+  onFire,
 }: Props) {
   const translateX = useSharedValue(0);
   const { width } = useWindowDimensions();
@@ -89,6 +91,16 @@ export default function CandidateCard({
       }
     });
 
+  const doubleTapGesture = Gesture.Tap()
+    .numberOfTaps(2)
+    .maxDuration(300)
+    .onEnd((_event, success) => {
+      if (success) {
+        runOnJS(onFire)();
+      }
+    });
+
+  const cardGesture = Gesture.Race(panGesture, doubleTapGesture);
   const animatedCardStyle = useAnimatedStyle(() => {
     const rotacao = interpolate(
       translateX.value,
@@ -115,7 +127,7 @@ export default function CandidateCard({
 
   return (
     <View style={styles.wrapper}>
-      <GestureDetector gesture={panGesture}>
+      <GestureDetector gesture={cardGesture}>
         <Animated.View style={[styles.card, animatedCardStyle]}>
           <ImageBackground
             key={`${candidato.id}-${fotoIndex}`}
@@ -212,11 +224,24 @@ export default function CandidateCard({
 
       <View style={styles.acoes}>
         <Pressable
-          accessibilityLabel="Descartar candidato"
+          accessibilityLabel="Rejeitar candidato"
           style={[styles.botaoAcao, styles.botaoRejeitar]}
           onPress={onReject}
         >
           <MaterialCommunityIcons name="close" size={32} color="#FF5252" />
+        </Pressable>
+
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Destacar candidato"
+          style={[styles.botaoAcao, styles.botaoDestaque]}
+          onPress={onFire}
+        >
+          <MaterialCommunityIcons
+            name="star-four-points"
+            size={26}
+            color="#F6C453"
+          />
         </Pressable>
 
         <Pressable
@@ -346,7 +371,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 34,
+    gap: 22,
   },
   botaoAcao: {
     width: 54,
@@ -363,5 +388,9 @@ const styles = StyleSheet.create({
   botaoAprovar: {
     borderWidth: 1.5,
     borderColor: "#8E53F4",
+  },
+  botaoDestaque: {
+    borderWidth: 1.5,
+    borderColor: "#F6C453",
   },
 });
