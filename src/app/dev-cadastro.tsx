@@ -1,10 +1,11 @@
-import Button from "@/components/button";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import * as ImagePicker from "expo-image-picker";
+import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
   Alert,
   Image,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -15,8 +16,51 @@ import {
   View,
 } from "react-native";
 
+const TOTAL_ETAPAS = 5;
+const LIMITE_FOTOS = 3;
+
+type CampoProps = {
+  label: string;
+  placeholder: string;
+  value: string;
+  onChangeText: (texto: string) => void;
+  keyboardType?: "default" | "numeric" | "email-address";
+  multiline?: boolean;
+  autoCapitalize?: "none" | "sentences" | "words" | "characters";
+};
+
+function Campo({
+  label,
+  placeholder,
+  value,
+  onChangeText,
+  keyboardType = "default",
+  multiline = false,
+  autoCapitalize = "sentences",
+}: CampoProps) {
+  return (
+    <View style={styles.cadastroInput}>
+      <Text style={styles.cadastroText}>{label}</Text>
+
+      <TextInput
+        placeholder={placeholder}
+        placeholderTextColor="#999"
+        value={value}
+        onChangeText={onChangeText}
+        keyboardType={keyboardType}
+        autoCapitalize={autoCapitalize}
+        multiline={multiline}
+        textAlignVertical={multiline ? "top" : "center"}
+        style={[styles.textInput, multiline && styles.textArea]}
+      />
+    </View>
+  );
+}
+
 export default function Dev() {
-  const [imagem, setImagem] = useState<string | null>(null);
+  const [etapa, setEtapa] = useState(0);
+
+  const [fotos, setFotos] = useState<string[]>([]);
 
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
@@ -36,31 +80,159 @@ export default function Dev() {
   const [projetos, setProjetos] = useState("");
   const [pretensaoSalarial, setPretensaoSalarial] = useState("");
   const [redesSociais, setRedesSociais] = useState("");
+  const router = useRouter();
 
-  async function selecionarImagem() {
-    const resultado = await ImagePicker.launchImageLibraryAsync({
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.8,
-    });
+  const titulos = [
+    "Fotos e dados pessoais",
+    "Sobre você",
+    "Formação e experiência",
+    "Tecnologias e projetos",
+    "Informações finais",
+  ];
 
-    if (!resultado.canceled) {
-      setImagem(resultado.assets[0].uri);
-    }
-  }
+  const progresso = ((etapa + 1) / TOTAL_ETAPAS) * 100;
 
-  function finalizarCadastro() {
-    if (!nome || !email || !idade || !localizacao) {
+  async function selecionarDaGaleria() {
+    const restantes = LIMITE_FOTOS - fotos.length;
+
+    if (restantes <= 0) {
       Alert.alert(
-        "Campos obrigatórios",
-        "Preencha Nome, Email, Idade e Localização.",
+        "Limite de fotos",
+        "Você já adicionou as três fotos permitidas.",
       );
       return;
     }
 
+    try {
+      const resultado = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"],
+        allowsMultipleSelection: true,
+        selectionLimit: restantes,
+        quality: 0.8,
+      });
+
+      if (!resultado.canceled) {
+        const novasFotos = resultado.assets
+          .map((foto) => foto.uri)
+          .slice(0, restantes);
+
+        setFotos((atuais) => [...atuais, ...novasFotos].slice(0, LIMITE_FOTOS));
+      }
+    } catch {
+      Alert.alert(
+        "Erro ao abrir a galeria",
+        "Não foi possível selecionar as imagens. Tente novamente.",
+      );
+    }
+  }
+
+  async function tirarFoto() {
+    if (fotos.length >= LIMITE_FOTOS) {
+      Alert.alert("Limite de fotos", "Remova uma foto antes de tirar outra.");
+      return;
+    }
+
+    try {
+      // No navegador, o próprio browser gerencia a solicitação da câmera.
+      if (Platform.OS !== "web") {
+        const permissao = await ImagePicker.requestCameraPermissionsAsync();
+
+        if (!permissao.granted) {
+          Alert.alert(
+            "Permissão necessária",
+            "Permita o acesso à câmera para tirar uma foto.",
+          );
+          return;
+        }
+      }
+
+      const resultado = await ImagePicker.launchCameraAsync({
+        mediaTypes: ["images"],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!resultado.canceled && resultado.assets[0]) {
+        const novaFoto = resultado.assets[0].uri;
+
+        setFotos((atuais) => [...atuais, novaFoto].slice(0, LIMITE_FOTOS));
+      }
+    } catch {
+      Alert.alert(
+        "Erro ao abrir a câmera",
+        "Não foi possível tirar a foto. Confira as permissões e tente novamente.",
+      );
+    }
+  }
+
+  function removerFoto(indice: number) {
+    setFotos((atuais) => atuais.filter((_, i) => i !== indice));
+  }
+
+  function validarDadosPessoais() {
+    if (!nome.trim() || !email.trim() || !idade.trim() || !localizacao.trim()) {
+      Alert.alert(
+        "Campos obrigatórios",
+        "Preencha nome, e-mail, idade e localização.",
+      );
+      return false;
+    }
+
+    if (!email.includes("@") || !email.includes(".")) {
+      Alert.alert("E-mail inválido", "Digite um endereço de e-mail válido.");
+      return false;
+    }
+
+    if (Number(idade) <= 0) {
+      Alert.alert("Idade inválida", "Digite uma idade válida.");
+      return false;
+    }
+
+    if (fotos.length === 0) {
+      Alert.alert(
+        "Adicione uma foto",
+        "Escolha pelo menos uma foto para o seu perfil. Você pode adicionar até três.",
+      );
+      return false;
+    }
+
+    return true;
+  }
+
+  function proximaEtapa() {
+    if (etapa === 0 && !validarDadosPessoais()) {
+      return;
+    }
+
+    Keyboard.dismiss();
+    setEtapa((atual) => Math.min(atual + 1, TOTAL_ETAPAS - 1));
+  }
+
+  function etapaAnterior() {
+    Keyboard.dismiss();
+    setEtapa((atual) => Math.max(atual - 1, 0));
+  }
+
+  function finalizarCadastro() {
+    if (!validarDadosPessoais()) {
+      setEtapa(0);
+      return;
+    }
+
+    Keyboard.dismiss();
+
+    // A integração com o CRUD será conectada à rotina de cadastro do projeto.
+    // As fotos estão disponíveis no estado "fotos", como um array de URIs.
     Alert.alert(
       "Cadastro finalizado!",
-      "Seu cadastro foi preenchido com sucesso.",
+      `Perfil de ${nome} preenchido com sucesso, com ${fotos.length} foto(s).`,
+      [
+        {
+          text: "OK",
+          onPress: () => router.push("/"),
+        },
+      ],
     );
   }
 
@@ -70,215 +242,345 @@ export default function Dev() {
         style={styles.scroll}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
+        {/* Cabeçalho e progresso */}
+        <View style={styles.header}>
+          <Text style={styles.titulo}>Crie seu perfil</Text>
+
+          <Text style={styles.contadorEtapas}>
+            Etapa {etapa + 1} de {TOTAL_ETAPAS}
+          </Text>
+
+          <View style={styles.progressTrack}>
+            <View
+              style={[
+                styles.progressFill,
+                { width: `${progresso}%` as `${number}%` },
+              ]}
+            />
+          </View>
+
+          <Text style={styles.tituloEtapa}>{titulos[etapa]}</Text>
+        </View>
+
         <ScrollView
-          contentContainerStyle={styles.content}
+          style={styles.stepScroll}
+          contentContainerStyle={styles.stepContent}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          <Text style={styles.titulo}>Preencha seus dados</Text>
+          {/* ETAPA 1: Fotos e dados pessoais */}
+          {etapa === 0 && (
+            <>
+              <Text style={styles.instrucao}>
+                Adicione até três fotos para que os recrutadores conheçam você.
+              </Text>
 
-          <Pressable style={styles.imageContainer} onPress={selecionarImagem}>
-            {imagem ? (
-              <Image source={{ uri: imagem }} style={styles.image} />
-            ) : (
-              <>
-                <MaterialCommunityIcons
-                  name="image-plus"
-                  size={60}
-                  color="#fff"
-                />
+              <View style={styles.fotosContainer}>
+                {Array.from({ length: LIMITE_FOTOS }).map((_, indice) => {
+                  const foto = fotos[indice];
 
-                <Text style={styles.imageText}>Adicionar imagem</Text>
-              </>
-            )}
-          </Pressable>
+                  return (
+                    <View key={indice} style={styles.fotoSlot}>
+                      {foto ? (
+                        <>
+                          <Image
+                            source={{ uri: foto }}
+                            style={styles.fotoPreview}
+                            resizeMode="cover"
+                          />
 
-          <View style={styles.cadastro}>
-            <View style={styles.cadastroInput}>
-              <Text style={styles.cadastroText}>Nome</Text>
+                          <Pressable
+                            accessibilityLabel={`Remover foto ${indice + 1}`}
+                            style={styles.removerFoto}
+                            onPress={() => removerFoto(indice)}
+                          >
+                            <MaterialCommunityIcons
+                              name="close"
+                              size={18}
+                              color="#FFFFFF"
+                            />
+                          </Pressable>
+                        </>
+                      ) : (
+                        <Pressable
+                          style={styles.adicionarFoto}
+                          onPress={selecionarDaGaleria}
+                        >
+                          <MaterialCommunityIcons
+                            name="image-plus"
+                            size={27}
+                            color="#B99AFF"
+                          />
+                          <Text style={styles.textoAdicionarFoto}>
+                            Foto {indice + 1}
+                          </Text>
+                        </Pressable>
+                      )}
+                    </View>
+                  );
+                })}
+              </View>
 
-              <TextInput
+              <Text style={styles.contadorFotos}>
+                {fotos.length} de {LIMITE_FOTOS} fotos adicionadas
+              </Text>
+
+              <View style={styles.botoesFotos}>
+                <Pressable
+                  style={styles.botaoFoto}
+                  onPress={selecionarDaGaleria}
+                >
+                  <MaterialCommunityIcons
+                    name="image-multiple"
+                    size={21}
+                    color="#FFFFFF"
+                  />
+                  <Text style={styles.textoBotaoFoto}>Galeria</Text>
+                </Pressable>
+
+                <Pressable style={styles.botaoFoto} onPress={tirarFoto}>
+                  <MaterialCommunityIcons
+                    name="camera"
+                    size={21}
+                    color="#FFFFFF"
+                  />
+                  <Text style={styles.textoBotaoFoto}>Câmera</Text>
+                </Pressable>
+              </View>
+
+              <Campo
+                label="Nome completo"
                 placeholder="Adicione seu nome"
-                placeholderTextColor="#999"
                 value={nome}
                 onChangeText={setNome}
-                style={styles.textInput}
               />
-            </View>
 
-            <View style={styles.cadastroInput}>
-              <Text style={styles.cadastroText}>Email</Text>
-
-              <TextInput
-                placeholder="Adicione seu email"
-                placeholderTextColor="#999"
+              <Campo
+                label="E-mail"
+                placeholder="Adicione seu e-mail"
                 value={email}
                 onChangeText={setEmail}
                 keyboardType="email-address"
                 autoCapitalize="none"
-                style={styles.textInput}
               />
-            </View>
 
-            <View style={styles.cadastroInput}>
-              <Text style={styles.cadastroText}>Idade</Text>
-
-              <TextInput
+              <Campo
+                label="Idade"
                 placeholder="Adicione sua idade"
-                placeholderTextColor="#999"
                 value={idade}
                 onChangeText={setIdade}
                 keyboardType="numeric"
-                style={styles.textInput}
               />
-            </View>
 
-            <View style={styles.cadastroInput}>
-              <Text style={styles.cadastroText}>Localização</Text>
-
-              <TextInput
-                placeholder="Adicione sua localização"
-                placeholderTextColor="#999"
+              <Campo
+                label="Localização"
+                placeholder="Ex.: Aquidauana, MS"
                 value={localizacao}
                 onChangeText={setLocalizacao}
-                style={styles.textInput}
               />
-            </View>
+            </>
+          )}
 
-            <View style={styles.cadastroInput}>
-              <Text style={styles.cadastroText}>Sobre mim</Text>
+          {/* ETAPA 2: Sobre e formação */}
+          {etapa === 1 && (
+            <>
+              <Text style={styles.instrucao}>
+                Conte um pouco sobre você e sua trajetória acadêmica.
+              </Text>
 
-              <TextInput
+              <Campo
+                label="Sobre mim"
                 placeholder="Fale um pouco sobre você"
-                placeholderTextColor="#999"
                 value={sobreMim}
                 onChangeText={setSobreMim}
                 multiline
-                numberOfLines={5}
-                textAlignVertical="top"
-                style={[styles.textInput, styles.textArea]}
               />
-            </View>
 
-            <View style={styles.cadastroInput}>
-              <Text style={styles.cadastroText}>Formação</Text>
-
-              <TextInput
-                placeholder="Ex.: Análise e Desenvolvimento de Sistemas"
-                placeholderTextColor="#999"
+              <Campo
+                label="Formação"
+                placeholder="Ex.: Sistemas para Internet"
                 value={formacao}
                 onChangeText={setFormacao}
-                style={styles.textInput}
               />
 
-              <View style={styles.datas}>
-                <TextInput
-                  placeholder="Início"
-                  placeholderTextColor="#999"
-                  value={formacaoInicio}
-                  onChangeText={setFormacaoInicio}
-                  style={[styles.textInput, styles.dataInput]}
-                />
+              <View style={styles.cadastroInput}>
+                <Text style={styles.cadastroText}>Período da formação</Text>
 
-                <TextInput
-                  placeholder="Fim"
-                  placeholderTextColor="#999"
-                  value={formacaoFim}
-                  onChangeText={setFormacaoFim}
-                  style={[styles.textInput, styles.dataInput]}
-                />
+                <View style={styles.datas}>
+                  <View style={styles.campoData}>
+                    <Campo
+                      label="Início"
+                      placeholder="Ex.: 2024"
+                      value={formacaoInicio}
+                      onChangeText={setFormacaoInicio}
+                      keyboardType="numeric"
+                    />
+                  </View>
+
+                  <View style={styles.campoData}>
+                    <Campo
+                      label="Fim"
+                      placeholder="Ex.: 2027"
+                      value={formacaoFim}
+                      onChangeText={setFormacaoFim}
+                      keyboardType="numeric"
+                    />
+                  </View>
+                </View>
               </View>
-            </View>
+            </>
+          )}
 
-            <View style={styles.cadastroInput}>
-              <Text style={styles.cadastroText}>Experiência</Text>
+          {/* ETAPA 3: Experiência */}
+          {etapa === 2 && (
+            <>
+              <Text style={styles.instrucao}>
+                Apresente sua experiência profissional, mesmo que seja um
+                estágio ou sua primeira oportunidade.
+              </Text>
 
-              <TextInput
+              <Campo
+                label="Experiência"
                 placeholder="Ex.: Desenvolvedor Front-end"
-                placeholderTextColor="#999"
                 value={experiencia}
                 onChangeText={setExperiencia}
-                style={styles.textInput}
               />
+
+              <Text style={styles.cadastroText}>Período da experiência</Text>
 
               <View style={styles.datas}>
-                <TextInput
-                  placeholder="Início"
-                  placeholderTextColor="#999"
-                  value={experienciaInicio}
-                  onChangeText={setExperienciaInicio}
-                  style={[styles.textInput, styles.dataInput]}
-                />
+                <View style={styles.campoData}>
+                  <Campo
+                    label="Início"
+                    placeholder="Ex.: 2025"
+                    value={experienciaInicio}
+                    onChangeText={setExperienciaInicio}
+                    keyboardType="numeric"
+                  />
+                </View>
 
-                <TextInput
-                  placeholder="Fim"
-                  placeholderTextColor="#999"
-                  value={experienciaFim}
-                  onChangeText={setExperienciaFim}
-                  style={[styles.textInput, styles.dataInput]}
-                />
+                <View style={styles.campoData}>
+                  <Campo
+                    label="Fim"
+                    placeholder="Atual"
+                    value={experienciaFim}
+                    onChangeText={setExperienciaFim}
+                  />
+                </View>
               </View>
-            </View>
+            </>
+          )}
 
-            <View style={styles.cadastroInput}>
-              <Text style={styles.cadastroText}>Linguagens</Text>
+          {/* ETAPA 4: Tecnologias e projetos */}
+          {etapa === 3 && (
+            <>
+              <Text style={styles.instrucao}>
+                Mostre quais tecnologias conhece e os projetos que já
+                desenvolveu.
+              </Text>
 
-              <TextInput
-                placeholder="Ex.: JavaScript, React, Python..."
-                placeholderTextColor="#999"
+              <Campo
+                label="Linguagens e tecnologias"
+                placeholder="Ex.: JavaScript, React Native, Python"
                 value={linguagens}
                 onChangeText={setLinguagens}
-                style={styles.textInput}
               />
-            </View>
 
-            <View style={styles.cadastroInput}>
-              <Text style={styles.cadastroText}>Projetos</Text>
-
-              <TextInput
-                placeholder="Adicione seus projetos"
-                placeholderTextColor="#999"
+              <Campo
+                label="Projetos"
+                placeholder="Descreva seus projetos ou coloque links"
                 value={projetos}
                 onChangeText={setProjetos}
                 multiline
-                style={[styles.textInput, styles.textAreaSmall]}
               />
-            </View>
+            </>
+          )}
 
-            <View style={styles.cadastroInput}>
-              <Text style={styles.cadastroText}>Pretensão Salarial</Text>
+          {/* ETAPA 5: Informações finais */}
+          {etapa === 4 && (
+            <>
+              <Text style={styles.instrucao}>
+                Finalize seu perfil com as informações que deseja compartilhar.
+              </Text>
 
-              <TextInput
+              <Campo
+                label="Pretensão salarial"
                 placeholder="Ex.: R$ 4.000,00"
-                placeholderTextColor="#999"
                 value={pretensaoSalarial}
                 onChangeText={setPretensaoSalarial}
-                keyboardType="numeric"
-                style={styles.textInput}
               />
-            </View>
 
-            <View style={styles.cadastroInput}>
-              <Text style={styles.cadastroText}>Redes sociais</Text>
-
-              <TextInput
-                placeholder="LinkedIn, GitHub, Instagram..."
-                placeholderTextColor="#999"
+              <Campo
+                label="Redes sociais"
+                placeholder="LinkedIn, GitHub ou portfólio"
                 value={redesSociais}
                 onChangeText={setRedesSociais}
-                style={styles.textInput}
               />
-            </View>
-          </View>
 
-          <View style={styles.buttonContainer}>
-            <Button
-              label="Finalizar cadastro"
-              color="#7C3DE8"
-              onPress={finalizarCadastro}
-            />
-          </View>
+              <View style={styles.resumoCadastro}>
+                <Text style={styles.resumoTitulo}>Resumo do perfil</Text>
+
+                <Text style={styles.resumoTexto}>Nome: {nome}</Text>
+                <Text style={styles.resumoTexto}>E-mail: {email}</Text>
+                <Text style={styles.resumoTexto}>
+                  Fotos adicionadas: {fotos.length}
+                </Text>
+                <Text style={styles.resumoTexto}>
+                  Tecnologias: {linguagens || "Não preenchidas"}
+                </Text>
+              </View>
+            </>
+          )}
         </ScrollView>
+
+        {/* Navegação entre as etapas */}
+        <View style={styles.navegacao}>
+          <Pressable
+            disabled={etapa === 0}
+            style={[
+              styles.botaoNavegacao,
+              styles.botaoVoltar,
+              etapa === 0 && styles.botaoDesabilitado,
+            ]}
+            onPress={etapaAnterior}
+          >
+            <MaterialCommunityIcons
+              name="arrow-left"
+              size={20}
+              color={etapa === 0 ? "#666666" : "#FFFFFF"}
+            />
+            <Text
+              style={[
+                styles.textoBotaoNavegacao,
+                etapa === 0 && styles.textoDesabilitado,
+              ]}
+            >
+              Voltar
+            </Text>
+          </Pressable>
+
+          {etapa < TOTAL_ETAPAS - 1 ? (
+            <Pressable
+              style={[styles.botaoNavegacao, styles.botaoProximo]}
+              onPress={proximaEtapa}
+            >
+              <Text style={styles.textoBotaoNavegacao}>Próximo</Text>
+              <MaterialCommunityIcons
+                name="arrow-right"
+                size={20}
+                color="#FFFFFF"
+              />
+            </Pressable>
+          ) : (
+            <Pressable
+              style={[styles.botaoNavegacao, styles.botaoProximo]}
+              onPress={finalizarCadastro}
+            >
+              <Text style={styles.textoBotaoNavegacao}>Finalizar</Text>
+              <MaterialCommunityIcons name="check" size={20} color="#FFFFFF" />
+            </Pressable>
+          )}
+        </View>
       </KeyboardAvoidingView>
     </View>
   );
@@ -287,108 +589,215 @@ export default function Dev() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: "center",
     backgroundColor: "#070707",
   },
-
   scroll: {
+    flex: 1,
     width: "100%",
+  },
+  header: {
+    paddingHorizontal: 24,
+    paddingTop: 22,
+    paddingBottom: 12,
+  },
+  titulo: {
+    color: "#FFFFFF",
+    fontSize: 27,
+    fontWeight: "700",
+  },
+  contadorEtapas: {
+    color: "#AAAAAA",
+    fontSize: 13,
+    marginTop: 6,
+  },
+  progressTrack: {
+    width: "100%",
+    height: 7,
+    backgroundColor: "#29232F",
+    borderRadius: 8,
+    overflow: "hidden",
+    marginTop: 16,
+  },
+  progressFill: {
+    height: "100%",
+    backgroundColor: "#8E53F4",
+    borderRadius: 8,
+  },
+  tituloEtapa: {
+    color: "#B99AFF",
+    fontSize: 19,
+    fontWeight: "700",
+    marginTop: 17,
+  },
+  stepScroll: {
     flex: 1,
   },
-
-  content: {
-    width: "100%",
-    maxWidth: 600,
-    alignSelf: "center",
-    alignItems: "center",
+  stepContent: {
     paddingHorizontal: 24,
-    paddingTop: 30,
-    paddingBottom: 50,
+    paddingTop: 8,
+    paddingBottom: 20,
   },
-
-  titulo: {
-    color: "#fff",
-    fontSize: 28,
-    fontWeight: "700",
-    marginBottom: 25,
-    textAlign: "center",
+  instrucao: {
+    color: "#AAAAAA",
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: 18,
   },
-
-  imageContainer: {
-    justifyContent: "center",
-    alignItems: "center",
-    borderColor: "#fff",
-    borderWidth: 1,
-    borderStyle: "dashed",
-    width: 180,
-    height: 180,
-    alignSelf: "center",
+  fotosContainer: {
+    flexDirection: "row",
+    gap: 10,
     marginBottom: 10,
-    overflow: "hidden",
   },
-
-  image: {
+  fotoSlot: {
+    flex: 1,
+    height: 112,
+    borderWidth: 1,
+    borderColor: "#594574",
+    borderRadius: 10,
+    overflow: "hidden",
+    backgroundColor: "#17131E",
+  },
+  fotoPreview: {
     width: "100%",
     height: "100%",
   },
-
-  imageText: {
-    color: "#fff",
+  adicionarFoto: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 7,
+  },
+  textoAdicionarFoto: {
+    color: "#D8C2FF",
+    fontSize: 12,
+  },
+  removerFoto: {
+    position: "absolute",
+    top: 5,
+    right: 5,
+    width: 25,
+    height: 25,
+    borderRadius: 14,
+    backgroundColor: "#9D1212",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  contadorFotos: {
+    color: "#AAAAAA",
+    fontSize: 12,
+    marginBottom: 12,
+  },
+  botoesFotos: {
+    flexDirection: "row",
+    gap: 10,
+    marginBottom: 22,
+  },
+  botaoFoto: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: "#29232F",
+    borderWidth: 1,
+    borderColor: "#594574",
+    borderRadius: 8,
+    paddingVertical: 11,
+  },
+  textoBotaoFoto: {
+    color: "#FFFFFF",
     fontSize: 14,
-    marginTop: 8,
+    fontWeight: "600",
   },
-
-  cadastro: {
-    width: "100%",
-    marginTop: 25,
-    marginBottom: 10,
-  },
-
   cadastroInput: {
     width: "100%",
     marginBottom: 16,
   },
-
   cadastroText: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: "600",
-    color: "#fff",
+    color: "#FFFFFF",
     marginBottom: 7,
   },
-
   textInput: {
-    borderColor: "#777",
+    borderColor: "#555555",
     borderWidth: 1,
-    borderRadius: 4,
-    color: "#fff",
+    borderRadius: 8,
+    color: "#FFFFFF",
+    backgroundColor: "#121212",
     paddingHorizontal: 12,
-    height: 44,
+    height: 46,
     width: "100%",
   },
-
   textArea: {
-    height: 110,
+    height: 120,
     paddingTop: 12,
   },
-
-  textAreaSmall: {
-    height: 80,
-    paddingTop: 12,
-  },
-
   datas: {
     flexDirection: "row",
-    gap: 10,
-    marginTop: 10,
+    gap: 12,
   },
-
-  dataInput: {
+  campoData: {
     flex: 1,
   },
-
-  buttonContainer: {
-    width: "100%",
-    maxWidth: 300,
-    marginTop: 10,
+  navegacao: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 12,
+    paddingHorizontal: 24,
+    paddingTop: 12,
+    paddingBottom: Platform.OS === "ios" ? 24 : 14,
+    backgroundColor: "#070707",
+    borderTopWidth: 1,
+    borderTopColor: "#222222",
+  },
+  botaoNavegacao: {
+    flex: 1,
+    minHeight: 48,
+    borderRadius: 8,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 12,
+  },
+  botaoVoltar: {
+    backgroundColor: "#202020",
+    borderWidth: 1,
+    borderColor: "#444444",
+  },
+  botaoProximo: {
+    backgroundColor: "#7C3DE8",
+  },
+  botaoDesabilitado: {
+    backgroundColor: "#151515",
+    borderColor: "#292929",
+  },
+  textoBotaoNavegacao: {
+    color: "#FFFFFF",
+    fontSize: 15,
+    fontWeight: "700",
+  },
+  textoDesabilitado: {
+    color: "#666666",
+  },
+  resumoCadastro: {
+    backgroundColor: "#17131E",
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#49345F",
+    padding: 16,
+    marginTop: 12,
+  },
+  resumoTitulo: {
+    color: "#B99AFF",
+    fontSize: 16,
+    fontWeight: "700",
+    marginBottom: 10,
+  },
+  resumoTexto: {
+    color: "#DDDDDD",
+    fontSize: 13,
+    lineHeight: 22,
   },
 });
