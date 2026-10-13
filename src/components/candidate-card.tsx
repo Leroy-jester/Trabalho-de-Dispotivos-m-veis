@@ -5,15 +5,18 @@ import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
     Extrapolation,
     interpolate,
-    runOnJS,
     useAnimatedStyle,
     useSharedValue,
+    withDelay,
+    withSequence,
     withSpring,
     withTiming,
 } from "react-native-reanimated";
 
+import { scheduleOnRN } from "react-native-worklets";
+
+import { useEffect, useState } from "react";
 import {
-    ImageBackground,
     Pressable,
     StyleSheet,
     Text,
@@ -39,6 +42,7 @@ type Props = {
   onReject: () => void;
   onApprove: () => void;
   onFire: () => void;
+  canFire: boolean;
 };
 
 export default function CandidateCard({
@@ -49,11 +53,80 @@ export default function CandidateCard({
   onReject,
   onApprove,
   onFire,
+  canFire,
 }: Props) {
   const translateX = useSharedValue(0);
+  const destaqueProgress = useSharedValue(0);
+  const destaqueAtivo = useSharedValue(false);
   const { width } = useWindowDimensions();
+  const [zoomAtivo, setZoomAtivo] = useState(false);
+  const infoOculta = useSharedValue(false);
+  const scale = useSharedValue(1);
+  const savedScale = useSharedValue(1);
+
+  useEffect(() => {
+    scale.value = 1;
+    savedScale.value = 1;
+    infoOculta.value = false;
+    setZoomAtivo(false);
+  }, [candidato.id, fotoIndex]);
+
+  const destaqueStyle = useAnimatedStyle(() => {
+    const escala = interpolate(
+      destaqueProgress.value,
+      [0, 0.5, 1],
+      [0.4, 1.2, 1],
+      Extrapolation.CLAMP,
+    );
+
+    const opacidade = interpolate(
+      destaqueProgress.value,
+      [0, 0.2, 1],
+      [0, 1, 1],
+      Extrapolation.CLAMP,
+    );
+
+    return {
+      opacity: opacidade,
+      transform: [{ scale: escala }],
+    };
+  });
+
+  function handleFire() {
+    // Se o limite Free acabou, abre a modal sem mostrar um falso destaque.
+    if (!canFire) {
+      onFire();
+      return;
+    }
+
+    // Evita disparar mais de uma vez durante a animação.
+    if (destaqueAtivo.value) {
+      return;
+    }
+
+    destaqueAtivo.value = true;
+    destaqueProgress.value = 0;
+
+    destaqueProgress.value = withSequence(
+      withTiming(1, { duration: 220 }),
+      withDelay(
+        300,
+        withTiming(0, { duration: 200 }, (finished) => {
+          destaqueAtivo.value = false;
+
+          if (finished) {
+            scheduleOnRN(onFire);
+          }
+        }),
+      ),
+    );
+  }
+  const animatedImageStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
 
   const panGesture = Gesture.Pan()
+    .maxPointers(1)
     .activeOffsetX([-10, 10])
     .onUpdate((event) => {
       translateX.value = event.translationX;
@@ -79,9 +152,9 @@ export default function CandidateCard({
           (finished) => {
             if (finished) {
               if (direcao > 0) {
-                runOnJS(onApprove)();
+                scheduleOnRN(onApprove);
               } else {
-                runOnJS(onReject)();
+                scheduleOnRN(onReject);
               }
             }
           },
@@ -91,12 +164,30 @@ export default function CandidateCard({
       }
     });
 
+  const pinchGesture = Gesture.Pinch()
+    .onUpdate((event) => {
+      const novoZoom = Math.max(1, Math.min(savedScale.value * event.scale, 3));
+
+      scale.value = novoZoom;
+
+      if (novoZoom > 1.08 && !infoOculta.value) {
+        infoOculta.value = true;
+        scheduleOnRN(setZoomAtivo, true);
+      } else if (novoZoom <= 1.08 && infoOculta.value) {
+        infoOculta.value = false;
+        scheduleOnRN(setZoomAtivo, false);
+      }
+    })
+    .onEnd(() => {
+      savedScale.value = scale.value;
+    });
+
   const doubleTapGesture = Gesture.Tap()
     .numberOfTaps(2)
     .maxDuration(300)
     .onEnd((_event, success) => {
       if (success) {
-        runOnJS(onFire)();
+        scheduleOnRN(handleFire);
       }
     });
 
@@ -124,18 +215,19 @@ export default function CandidateCard({
       opacity: opacidade,
     };
   });
+  const combinedGesture = Gesture.Simultaneous(cardGesture, pinchGesture);
 
   return (
     <View style={styles.wrapper}>
-      <GestureDetector gesture={cardGesture}>
+      <GestureDetector gesture={combinedGesture}>
         <Animated.View style={[styles.card, animatedCardStyle]}>
-          <ImageBackground
-            key={`${candidato.id}-${fotoIndex}`}
-            source={{ uri: candidato.fotos[fotoIndex] }}
-            style={styles.foto}
-            imageStyle={styles.imagem}
-            resizeMode="cover"
-          >
+          <View style={styles.foto}>
+            <Animated.Image
+              key={`${candidato.id}-${fotoIndex}`}
+              source={{ uri: candidato.fotos[fotoIndex] }}
+              style={[styles.imagem, animatedImageStyle]}
+              resizeMode="cover"
+            />
             <View style={styles.fotoIndicadores}>
               {candidato.fotos.map((_, index) => (
                 <Pressable
@@ -179,46 +271,63 @@ export default function CandidateCard({
                 }
               ></Pressable>
             </View>
-            <View style={styles.informacoes}>
-              <Text style={styles.nome}>
-                {candidato.nome}, {candidato.idade}
-              </Text>
 
-              <Text style={styles.localizacao}>
-                <MaterialCommunityIcons
-                  name="map-marker"
-                  size={16}
-                  color="#FFFFFF"
-                />{" "}
-                {candidato.localizacao}
-              </Text>
+            {!zoomAtivo && (
+              <View style={styles.informacoes}>
+                <Text style={styles.nome}>
+                  {candidato.nome}, {candidato.idade}
+                </Text>
 
-              <Text style={styles.resumo} numberOfLines={2}>
-                {candidato.sobre}
-              </Text>
+                <Text style={styles.localizacao}>
+                  <MaterialCommunityIcons
+                    name="map-marker"
+                    size={16}
+                    color="#FFFFFF"
+                  />{" "}
+                  {candidato.localizacao}
+                </Text>
 
-              <View style={styles.tags}>
-                {candidato.linguagens.split(", ").map((linguagem) => (
-                  <View key={linguagem} style={styles.tag}>
-                    <Text style={styles.textoTag}>{linguagem}</Text>
-                  </View>
-                ))}
+                <Text style={styles.resumo} numberOfLines={2}>
+                  {candidato.sobre}
+                </Text>
+
+                <View style={styles.tags}>
+                  {candidato.linguagens.split(", ").map((linguagem) => (
+                    <View key={linguagem} style={styles.tag}>
+                      <Text style={styles.textoTag}>{linguagem}</Text>
+                    </View>
+                  ))}
+                </View>
+
+                <Pressable
+                  accessibilityLabel="Ver perfil completo"
+                  style={styles.botaoDetalhes}
+                  onPress={onShowDetails}
+                >
+                  <MaterialCommunityIcons
+                    name="chevron-up"
+                    size={30}
+                    color="#FFFFFF"
+                  />
+                  <Text style={styles.textoDetalhes}>Ver perfil completo</Text>
+                </Pressable>
               </View>
+            )}
+          </View>
+          <Animated.View
+            pointerEvents="none"
+            style={[styles.destaqueOverlay, destaqueStyle]}
+          >
+            <View style={styles.destaqueBadge}>
+              <MaterialCommunityIcons
+                name="star-four-points"
+                size={64}
+                color="#F6C453"
+              />
 
-              <Pressable
-                accessibilityLabel="Ver perfil completo"
-                style={styles.botaoDetalhes}
-                onPress={onShowDetails}
-              >
-                <MaterialCommunityIcons
-                  name="chevron-up"
-                  size={30}
-                  color="#FFFFFF"
-                />
-                <Text style={styles.textoDetalhes}>Ver perfil completo</Text>
-              </Pressable>
+              <Text style={styles.destaqueTexto}>DESTACADO!</Text>
             </View>
-          </ImageBackground>
+          </Animated.View>
         </Animated.View>
       </GestureDetector>
 
@@ -235,7 +344,7 @@ export default function CandidateCard({
           accessibilityRole="button"
           accessibilityLabel="Destacar candidato"
           style={[styles.botaoAcao, styles.botaoDestaque]}
-          onPress={onFire}
+          onPress={handleFire}
         >
           <MaterialCommunityIcons
             name="star-four-points"
@@ -276,6 +385,11 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   imagem: {
+    position: "absolute",
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
     borderRadius: 18,
   },
   fotoIndicadores: {
@@ -392,5 +506,35 @@ const styles = StyleSheet.create({
   botaoDestaque: {
     borderWidth: 1.5,
     borderColor: "#F6C453",
+  },
+
+  destaqueOverlay: {
+    position: "absolute",
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    zIndex: 10,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  destaqueBadge: {
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(25, 20, 35, 0.95)",
+    borderWidth: 2,
+    borderColor: "#F6C453",
+    borderRadius: 24,
+    paddingVertical: 22,
+    paddingHorizontal: 32,
+  },
+
+  destaqueTexto: {
+    color: "#F6C453",
+    fontSize: 21,
+    fontWeight: "900",
+    letterSpacing: 2,
+    marginTop: 8,
   },
 });

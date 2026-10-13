@@ -109,6 +109,7 @@ export default function Recrutador() {
         onReject={() => avaliar(false)}
         onApprove={() => avaliar(true)}
         onFire={darDisparo}
+        canFire={isPro || disparos < 3}
       />
 
       {/* Gaveta com os detalhes do candidato */}
