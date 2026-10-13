@@ -1,6 +1,6 @@
 import { useRecruitment, type Candidate } from "@/contexts/recruitment-context";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
-import { FlatList, StyleSheet, Text, View } from "react-native";
+import { FlatList, Image, StyleSheet, Text, View } from "react-native";
 
 export default function Lista() {
   const { candidatos, aprovadosIds, prioritariosIds } = useRecruitment();
@@ -55,11 +55,19 @@ export default function Lista() {
           return (
             <View style={styles.card}>
               <View style={styles.avatar}>
-                <MaterialCommunityIcons
-                  name="account-circle"
-                  size={46}
-                  color="#8E53F4"
-                />
+                {item.fotos?.[0] ? (
+                  <Image
+                    source={{ uri: item.fotos[0] }}
+                    style={styles.avatarImage}
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <MaterialCommunityIcons
+                    name="account-circle"
+                    size={46}
+                    color="#8E53F4"
+                  />
+                )}
               </View>
 
               <View style={styles.informacoes}>
@@ -184,5 +192,11 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 8,
     lineHeight: 20,
+  },
+  avatarImage: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: "#29232F",
   },
 });
