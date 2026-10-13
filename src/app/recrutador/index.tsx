@@ -247,4 +247,5 @@ const styles = StyleSheet.create({
     color: "#AAAAAA",
     marginTop: 20,
   },
+  titulo: {},
 });
