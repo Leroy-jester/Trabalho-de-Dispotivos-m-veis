@@ -2,6 +2,7 @@ import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
 import { useState } from "react";
+import { useRecruitment } from "@/contexts/recruitment-context";
 import {
   Alert,
   Image,
@@ -80,6 +81,7 @@ export default function Dev() {
   const [projetos, setProjetos] = useState("");
   const [pretensaoSalarial, setPretensaoSalarial] = useState("");
   const [redesSociais, setRedesSociais] = useState("");
+  const { adicionarCandidato } = useRecruitment();
   const router = useRouter();
 
   const titulos = [
@@ -214,27 +216,40 @@ export default function Dev() {
     setEtapa((atual) => Math.max(atual - 1, 0));
   }
 
+
   function finalizarCadastro() {
     if (!validarDadosPessoais()) {
       setEtapa(0);
       return;
     }
 
+    adicionarCandidato({
+      nome: nome.trim(),
+      idade: Number(idade),
+      localizacao: localizacao.trim(),
+      sobre: sobreMim.trim(),
+      linguagens: linguagens.trim(),
+      formacao: formacao.trim(),
+      experiencia: experiencia.trim(),
+      projetos: projetos.trim(),
+      pretensaoSalarial: pretensaoSalarial.trim(),
+      fotos,
+    });
+
     Keyboard.dismiss();
 
-    // A integração com o CRUD será conectada à rotina de cadastro do projeto.
-    // As fotos estão disponíveis no estado "fotos", como um array de URIs.
     Alert.alert(
-      "Cadastro finalizado!",
-      `Perfil de ${nome} preenchido com sucesso, com ${fotos.length} foto(s).`,
+      "Cadastro realizado!",
+      `Perfil de ${nome} cadastrado com sucesso.`,
       [
         {
           text: "OK",
-          onPress: () => router.push("/"),
+          onPress: () => router.replace("/"),
         },
       ],
     );
   }
+
 
   return (
     <View style={styles.container}>

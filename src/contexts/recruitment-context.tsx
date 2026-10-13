@@ -1,4 +1,7 @@
-import { createContext, useContext, useState, type ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
+import AsyncStorage from
+  "@react-native-async-storage/async-storage";
+const STORAGE_KEY = "@recrutadev:candidatos";
 
 export type Candidate = {
   id: string;
@@ -12,6 +15,12 @@ export type Candidate = {
   projetos: string;
   pretensaoSalarial: string;
   fotos: string[];
+  email?: string;
+  formacaoInicio?: string;
+  formacaoFim?: string;
+  experienciaInicio?: string;
+  experienciaFim?: string;
+  redesSociais?: string;
 };
 
 const candidatosIniciais: Candidate[] = [
@@ -82,6 +91,9 @@ type RecruitmentContextData = {
   disparar: (id: string) => boolean;
   ultimoDescartadoId: string | null;
   desfazerDescarte: () => string | null;
+  adicionarCandidato: (dados: Omit<Candidate, "id">) => Candidate;
+  atualizarCandidato: (  id: string,  dados: Omit<Candidate, "id">) => void;
+  excluirCandidato: (id: string) => void;
 };
 
 const RecruitmentContext = createContext<RecruitmentContextData | undefined>(
@@ -89,6 +101,8 @@ const RecruitmentContext = createContext<RecruitmentContextData | undefined>(
 );
 
 export function RecruitmentProvider({ children }: { children: ReactNode }) {
+  const [carregado, setCarregado] = useState(false);
+  const [candidatos, setCandidatos] = useState<Candidate[]>(candidatosIniciais);
   const [aprovadosIds, setAprovadosIds] = useState<string[]>([]);
   const [descartadosIds, setDescartadosIds] = useState<string[]>([]);
   const [prioritariosIds, setPrioritariosIds] = useState<string[]>([]);
@@ -97,8 +111,78 @@ export function RecruitmentProvider({ children }: { children: ReactNode }) {
     null,
   );
 
+  useEffect(() => {
+    async function carregar() {
+      try {
+        const dados = await AsyncStorage.getItem(STORAGE_KEY);
+
+        if (dados !== null) {
+          const candidatosSalvos: Candidate[] = JSON.parse(dados);
+          setCandidatos(candidatosSalvos);
+        }
+      } catch (erro) {
+        console.error("Erro ao carregar candidatos:", erro);
+      } finally {
+        setCarregado(true);
+      }
+    }
+
+    carregar();
+  }, []);
+
+  useEffect(() => {
+    if (!carregado) return;
+
+    AsyncStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify(candidatos),
+    ).catch((erro) => {
+      console.error("Erro ao salvar candidatos:", erro);
+    });
+  }, [candidatos, carregado]);
+
   // Por enquanto, o plano é simulado como Free.
   const isPro = false;
+
+  const adicionarCandidato = (dados: Omit<Candidate, "id">) => {
+    const novoCandidato: Candidate = {
+      ...dados,
+      id: String(Date.now()),
+    };
+
+    setCandidatos((atuais) => [...atuais, novoCandidato]);
+
+    return novoCandidato;
+  };
+
+  const atualizarCandidato = (
+    id: string,
+    dados: Omit<Candidate, "id">
+  ) => {
+    setCandidatos((atuais) =>
+      atuais.map((candidato) =>
+        candidato.id === id
+          ? { ...candidato, ...dados, id }
+          : candidato
+      )
+    );
+  };
+
+  const excluirCandidato = (id: string) => {
+    setCandidatos((atuais) =>
+      atuais.filter((candidato) => candidato.id !== id)
+    );
+
+    setAprovadosIds((atuais) =>
+      atuais.filter((candidatoId) => candidatoId !== id)
+    );
+
+    setPrioritariosIds((atuais) =>
+      atuais.filter((candidatoId) => candidatoId !== id)
+    );
+  };
+
+  
 
   function aprovar(id: string) {
     setAprovadosIds((atuais) =>
@@ -156,7 +240,7 @@ export function RecruitmentProvider({ children }: { children: ReactNode }) {
   return (
     <RecruitmentContext.Provider
       value={{
-        candidatos: candidatosIniciais,
+        candidatos: candidatos,
         aprovadosIds,
         descartadosIds,
         prioritariosIds,
@@ -167,6 +251,9 @@ export function RecruitmentProvider({ children }: { children: ReactNode }) {
         descartar,
         disparar,
         desfazerDescarte,
+        adicionarCandidato,
+        atualizarCandidato,
+        excluirCandidato,
       }}
     >
       {children}
