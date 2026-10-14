@@ -1,11 +1,9 @@
-import { RecruitmentProvider } from "@/contexts/recruitment-context";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { Tabs } from "expo-router";
 
 export default function RecrutadorLayout() {
   return (
-    <RecruitmentProvider>
-      <Tabs
+    <Tabs
         screenOptions={{
           headerShown: false,
           tabBarStyle: {
@@ -45,6 +43,5 @@ export default function RecrutadorLayout() {
           }}
         />
       </Tabs>
-    </RecruitmentProvider>
   );
 }
