@@ -1,6 +1,6 @@
+import { useRecruitment } from "@/contexts/recruitment-context";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useRouter } from "expo-router";
-import { useRecruitment } from "@/contexts/recruitment-context";
 import {
   Alert,
   Image,
@@ -14,16 +14,10 @@ import {
 export default function DevPerfil() {
   const router = useRouter();
 
-  const {
-    candidatos,
-    perfilAtualId,
-    sairDoPerfil,
-    excluirCandidato,
-  } = useRecruitment();
+  const { candidatos, perfilAtualId, sairDoPerfil, excluirCandidato } =
+    useRecruitment();
 
-  const candidato = candidatos.find(
-    (item) => item.id === perfilAtualId
-  );
+  const candidato = candidatos.find((item) => item.id === perfilAtualId);
 
   async function logout() {
     await sairDoPerfil();
@@ -47,7 +41,7 @@ export default function DevPerfil() {
             router.replace("/");
           },
         },
-      ]
+      ],
     );
   }
 
@@ -84,40 +78,35 @@ export default function DevPerfil() {
       <View style={styles.header}>
         <Text style={styles.titulo}>Meu perfil</Text>
 
-        <Pressable onPress={logout} accessibilityLabel="Sair da conta">
+        <Pressable
+          onPress={() => router.replace("/")}
+          accessibilityLabel="Voltar para o início"
+          hitSlop={10}
+        >
           <MaterialCommunityIcons
-            name="logout"
-            size={27}
+            name="home-outline"
+            size={29}
             color="#FFFFFF"
           />
         </Pressable>
       </View>
 
       {candidato.fotos?.[0] && (
-        <Image
-          source={{ uri: candidato.fotos[0] }}
-          style={styles.foto}
-        />
+        <Image source={{ uri: candidato.fotos[0] }} style={styles.foto} />
       )}
 
       <Text style={styles.nome}>
         {candidato.nome}, {candidato.idade}
       </Text>
 
-      <Text style={styles.localizacao}>
-        {candidato.localizacao}
-      </Text>
+      <Text style={styles.localizacao}>{candidato.localizacao}</Text>
 
       <View style={styles.secao}>
         <Text style={styles.rotulo}>Sobre mim</Text>
-        <Text style={styles.valor}>
-          {candidato.sobre || "Não informado"}
-        </Text>
+        <Text style={styles.valor}>{candidato.sobre || "Não informado"}</Text>
 
         <Text style={styles.rotulo}>E-mail</Text>
-        <Text style={styles.valor}>
-          {candidato.email || "Não informado"}
-        </Text>
+        <Text style={styles.valor}>{candidato.email || "Não informado"}</Text>
 
         <Text style={styles.rotulo}>Formação</Text>
         <Text style={styles.valor}>
@@ -167,10 +156,7 @@ export default function DevPerfil() {
         <Text style={styles.textoBotao}>Editar perfil</Text>
       </Pressable>
 
-      <Pressable
-        style={styles.botaoExcluir}
-        onPress={excluirPerfil}
-      >
+      <Pressable style={styles.botaoExcluir} onPress={excluirPerfil}>
         <MaterialCommunityIcons
           name="trash-can-outline"
           size={21}
@@ -180,11 +166,7 @@ export default function DevPerfil() {
       </Pressable>
 
       <Pressable style={styles.botaoSecundario} onPress={logout}>
-        <MaterialCommunityIcons
-          name="logout"
-          size={20}
-          color="#FFFFFF"
-        />
+        <MaterialCommunityIcons name="logout" size={20} color="#FFFFFF" />
         <Text style={styles.textoBotao}>Sair</Text>
       </Pressable>
     </ScrollView>
