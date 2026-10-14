@@ -226,12 +226,12 @@ Os perfis de demonstração usam imagens externas, cuja exibição depende de ac
 - A funcionalidade de análise do candidato precisa ser implementada ou validada.
 - Os resultados dos testes devem ser preenchidos após a execução em dispositivo ou emulador.
 
-## 8. Integrantes
+## 8. Integrantes e divisao de papeis
 
-- George Lucas
-- Josef Ferreira
-- Gabriel Rangel
-- Lucas Silva
+- **George Lucas:** Design & Animações (criação das telas no Figma, gestos de arrastar os cards e efeitos visuais).
+- **Josef Ferreira:** Banco Local & Dados dos Candidatos (armazenamento no AsyncStorage, lógica de cadastro, edição e exclusão no contexto).
+- **Gabriel Rangel:** Lógica do Plano PRO & Ajustes de Interface (regras de bloqueio Free/PRO, galeria de fotos dos cards e correções de telas/teclado).
+- **Lucas Silva:** Estrutura do Cadastro & Documentação (criação da base do formulário de desenvolvedor e montagem do README).
 
 ## 9. Repositório
 
