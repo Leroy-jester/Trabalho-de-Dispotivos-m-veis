@@ -60,8 +60,7 @@ export default function Recrutador() {
       return;
     }
 
-    setIndice((atual) => atual + 1);
-    setFotoIndex(0);
+    avancar();
   }
 
   function reiniciar() {
@@ -220,7 +219,11 @@ export default function Recrutador() {
                     setProAberto(true);
                   }}
                 >
-                  <MaterialCommunityIcons name="lock" color="#B99AFF" size={22} />
+                  <MaterialCommunityIcons
+                    name="lock"
+                    color="#B99AFF"
+                    size={22}
+                  />
 
                   <View style={styles.salarioInformacoes}>
                     <Text style={styles.salarioOculto}>R$ ••••••</Text>
