@@ -1,8 +1,9 @@
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import * as ImagePicker from "expo-image-picker";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import { useRecruitment } from "@/contexts/recruitment-context";
+import { useEffect } from "react";
 import {
   Alert,
   Image,
@@ -81,7 +82,17 @@ export default function Dev() {
   const [projetos, setProjetos] = useState("");
   const [pretensaoSalarial, setPretensaoSalarial] = useState("");
   const [redesSociais, setRedesSociais] = useState("");
-  const { adicionarCandidato } = useRecruitment();
+  const { editarId } = useLocalSearchParams<{ editarId?: string }>();
+
+  const {
+    adicionarCandidato,
+    atualizarCandidato,
+    candidatos,
+  } = useRecruitment();
+
+  const candidatoEdicao = candidatos.find(
+    (item) => item.id === editarId
+  );
   const router = useRouter();
 
   const titulos = [
@@ -93,6 +104,30 @@ export default function Dev() {
   ];
 
   const progresso = ((etapa + 1) / TOTAL_ETAPAS) * 100;
+
+  useEffect(() => {
+    if (!editarId || !candidatoEdicao) return;
+
+    setNome(candidatoEdicao.nome ?? "");
+    setEmail(candidatoEdicao.email ?? "");
+    setIdade(String(candidatoEdicao.idade ?? ""));
+    setLocalizacao(candidatoEdicao.localizacao ?? "");
+    setSobreMim(candidatoEdicao.sobre ?? "");
+
+    setFormacao(candidatoEdicao.formacao ?? "");
+    setFormacaoInicio(candidatoEdicao.formacaoInicio ?? "");
+    setFormacaoFim(candidatoEdicao.formacaoFim ?? "");
+
+    setExperiencia(candidatoEdicao.experiencia ?? "");
+    setExperienciaInicio(candidatoEdicao.experienciaInicio ?? "");
+    setExperienciaFim(candidatoEdicao.experienciaFim ?? "");
+
+    setLinguagens(candidatoEdicao.linguagens ?? "");
+    setProjetos(candidatoEdicao.projetos ?? "");
+    setPretensaoSalarial(candidatoEdicao.pretensaoSalarial ?? "");
+    setRedesSociais(candidatoEdicao.redesSociais ?? "");
+    setFotos(candidatoEdicao.fotos ?? []);
+  }, [editarId, candidatoEdicao]);
 
   async function selecionarDaGaleria() {
     const restantes = LIMITE_FOTOS - fotos.length;
@@ -173,6 +208,7 @@ export default function Dev() {
   }
 
   function validarDadosPessoais() {
+    const idadeNumerica = Number(idade);
     if (!nome.trim() || !email.trim() || !idade.trim() || !localizacao.trim()) {
       Alert.alert(
         "Campos obrigatórios",
@@ -186,8 +222,15 @@ export default function Dev() {
       return false;
     }
 
-    if (Number(idade) <= 0) {
-      Alert.alert("Idade inválida", "Digite uma idade válida.");
+    if (
+      !Number.isInteger(idadeNumerica) ||
+      idadeNumerica <= 0 ||
+      idadeNumerica > 120
+    ) {
+      Alert.alert(
+        "Idade inválida",
+        "Digite uma idade inteira entre 1 e 120 anos.",
+      );
       return false;
     }
 
@@ -223,16 +266,60 @@ export default function Dev() {
       return;
     }
 
+    if (editarId && !candidatoEdicao) {
+      Alert.alert(
+        "Perfil não encontrado",
+        "Não foi possível localizar a conta que você deseja editar."
+      );
+      return;
+    }
+
+    if (editarId && candidatoEdicao) {
+      atualizarCandidato(candidatoEdicao.id, {
+        nome: nome.trim(),
+        email: email.trim(),
+        idade: Number(idade),
+        localizacao: localizacao.trim(),
+        sobre: sobreMim.trim(),
+        formacao: formacao.trim(),
+        formacaoInicio,
+        formacaoFim,
+        experiencia: experiencia.trim(),
+        experienciaInicio,
+        experienciaFim,
+        linguagens: linguagens.trim(),
+        projetos: projetos.trim(),
+        pretensaoSalarial: pretensaoSalarial.trim(),
+        redesSociais: redesSociais.trim(),
+        fotos,
+      });
+
+      Alert.alert("Perfil atualizado", "Suas alterações foram salvas.", [
+        {
+          text: "OK",
+          onPress: () => router.replace("/dev-perfil"),
+        },
+      ]);
+
+      return;
+    }
+
     adicionarCandidato({
       nome: nome.trim(),
+      email: email.trim(),
       idade: Number(idade),
       localizacao: localizacao.trim(),
       sobre: sobreMim.trim(),
-      linguagens: linguagens.trim(),
       formacao: formacao.trim(),
+      formacaoInicio,
+      formacaoFim,
       experiencia: experiencia.trim(),
+      experienciaInicio,
+      experienciaFim,
+      linguagens: linguagens.trim(),
       projetos: projetos.trim(),
       pretensaoSalarial: pretensaoSalarial.trim(),
+      redesSociais: redesSociais.trim(),
       fotos,
     });
 

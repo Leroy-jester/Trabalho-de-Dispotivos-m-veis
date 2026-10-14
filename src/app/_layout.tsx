@@ -10,6 +10,7 @@ export default function RootLayout() {
           <Stack.Screen name="index" />
           <Stack.Screen name="dev-cadastro" />
           <Stack.Screen name="recrutador" />
+          <Stack.Screen name="dev-perfil" />
         </Stack>
       </RecruitmentProvider>
     </GestureHandlerRootView>
