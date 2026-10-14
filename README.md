@@ -168,21 +168,32 @@ O contexto `recruitment-context.tsx` utiliza AsyncStorage, com a chave `@recruta
 
 O projeto apresenta uma experiência Free e uma janela informativa do RecrutaDEV PRO. Os recursos de plano estão simulados no aplicativo, sem integração com um serviço de assinatura ou pagamento.
 
-### Plano Free
+### Tabela comparativa dos planos
 
-- Avaliação normal de candidatos por aprovação e descarte.
-- Limite de três disparos por sessão.
-- Pretensão salarial protegida por um bloqueio visual.
-- Apresentação da janela PRO quando uma ação restrita é solicitada.
+| Recurso / Funcionalidade | Plano Free | Plano RecrutaDEV PRO |
+| :--- | :---: | :---: |
+| **Swipes (Aprovar / Descartar)** | Ilimitados | Ilimitados |
+| **Visualização básica e Bottom Sheet** | Liberada (bio, formação, experiência, stacks) | Liberada completa |
+| **Disparos (Duplo toque / Fixar no topo)** | Até 3 por sessão | Ilimitados |
+| **Pretensão salarial** | Protegida (com cadeado que abre modal PRO) | Desbloqueada |
+| **Gesto/Botão Revert (Desfazer descarte)** | Bloqueado (abre modal PRO) | Habilitado |
+| **Análise do candidato** | Bloqueada | Desbloqueada |
 
-### Recursos previstos para o PRO
+### Detalhamento dos recursos
 
-- Disparos sem o limite do plano Free.
-- Acesso à pretensão salarial.
-- Recurso para desfazer o último descarte (Revert).
-- Análise do candidato.
+- **Plano Free:**
+  - Avaliação normal de candidatos por aprovação e descarte.
+  - Limite de três disparos por sessão.
+  - Pretensão salarial protegida por um bloqueio visual com cadeado.
+  - Apresentação da janela PRO quando uma ação restrita é solicitada.
 
-**Observação:** a janela PRO é informativa. O projeto não possui fluxo de compra, cobrança ou gerenciamento de assinatura. A funcionalidade específica de análise do candidato e a validação completa de todos os recursos PRO ainda precisam ser concluídas ou demonstradas nos testes.
+- **Plano PRO:**
+  - Disparos sem o limite do plano Free.
+  - Acesso liberado à pretensão salarial.
+  - Recurso para desfazer o último descarte (Revert).
+  - Análise do candidato.
+
+**Observação:** a janela PRO é informativa e simula a assinatura através de um botão de alternância (toggle), permitindo testar ambos os cenários livremente sem fluxo de pagamento real.
 
 ## 6. Dados dos candidatos
 
