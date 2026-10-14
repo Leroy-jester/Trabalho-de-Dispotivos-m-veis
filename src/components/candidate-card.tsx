@@ -31,7 +31,8 @@ type Candidato = {
   localizacao: string;
   sobre: string;
   linguagens: string;
-  fotos: string[];
+  fotos?: string[];
+  foto?: string;
 };
 
 type Props = {
@@ -210,6 +211,15 @@ export default function CandidateCard({
       savedScale.value = scale.value;
     });
 
+  const fotos =
+    candidato.fotos && candidato.fotos.length > 0
+      ? candidato.fotos
+      : candidato.foto
+        ? [candidato.foto]
+        : [];
+  const fotoAtual = fotos[fotoIndex] || fotos[0] || "";
+  const temMultiplasFotos = fotos.length > 1;
+
   const doubleTapGesture = Gesture.Tap()
     .numberOfTaps(2)
     .maxDuration(300)
@@ -220,17 +230,7 @@ export default function CandidateCard({
       }
     });
 
-  const singleTapGesture = Gesture.Tap()
-    .numberOfTaps(1)
-    .maxDuration(300)
-    .onEnd((_event, success) => {
-      if (success) {
-        scheduleOnRN(onShowDetails);
-      }
-    });
-
-  const tapGestures = Gesture.Exclusive(doubleTapGesture, singleTapGesture);
-  const cardGesture = Gesture.Race(panGesture, tapGestures);
+  const cardGesture = Gesture.Race(panGesture, doubleTapGesture);
   const animatedCardStyle = useAnimatedStyle(() => {
     const rotacao = interpolate(
       translateX.value,
@@ -262,61 +262,82 @@ export default function CandidateCard({
       <GestureDetector gesture={combinedGesture}>
         <Animated.View style={[styles.card, animatedCardStyle]}>
           <View style={styles.foto}>
-            <Animated.Image
-              key={`${candidato.id}-${fotoIndex}`}
-              source={{ uri: candidato.fotos[fotoIndex] }}
-              style={[styles.imagem, animatedImageStyle]}
-              resizeMode="cover"
-            />
-            <View style={styles.fotoIndicadores}>
-              {candidato.fotos.map((_, index) => (
+            {fotoAtual ? (
+              <Animated.Image
+                key={`${candidato.id}-${fotoIndex}`}
+                source={{ uri: fotoAtual }}
+                style={[styles.imagem, animatedImageStyle]}
+                resizeMode="cover"
+              />
+            ) : null}
+
+            {temMultiplasFotos && (
+              <View pointerEvents="box-none" style={styles.fotoIndicadores}>
+                {fotos.map((_, index) => (
+                  <Pressable
+                    key={index}
+                    style={styles.areaIndicador}
+                    onPress={() => onFotoChange(index)}
+                  >
+                    <View
+                      style={[
+                        styles.indicador,
+                        {
+                          backgroundColor:
+                            index === fotoIndex
+                              ? "#FFFFFF"
+                              : "rgba(255,255,255,0.45)",
+                        },
+                      ]}
+                    />
+                  </Pressable>
+                ))}
+              </View>
+            )}
+
+            {temMultiplasFotos && (
+              <View pointerEvents="box-none" style={styles.navegacaoFotos}>
                 <Pressable
-                  key={index}
-                  style={styles.areaIndicador}
-                  onPress={() => onFotoChange(index)}
-                >
-                  <View
-                    style={[
-                      styles.indicador,
-                      {
-                        backgroundColor:
-                          index === fotoIndex
-                            ? "#FFFFFF"
-                            : "rgba(255,255,255,0.45)",
-                      },
-                    ]}
-                  />
-                </Pressable>
-              ))}
-            </View>
+                  accessibilityLabel="Foto anterior"
+                  style={[styles.controleFoto, styles.controleFotoEsquerda]}
+                  onPress={() => {
+                    if (fotoIndex > 0) {
+                      onFotoChange(fotoIndex - 1);
+                    }
+                  }}
+                />
 
-            <View pointerEvents="box-none" style={styles.navegacaoFotos}>
-              <Pressable
-                accessibilityLabel="Foto anterior"
-                style={styles.controleFoto}
-                onPress={() =>
-                  onFotoChange(
-                    fotoIndex === 0
-                      ? candidato.fotos.length - 1
-                      : fotoIndex - 1,
-                  )
-                }
-              ></Pressable>
-
-              <Pressable
-                accessibilityLabel="Próxima foto"
-                style={styles.controleFoto}
-                onPress={() =>
-                  onFotoChange((fotoIndex + 1) % candidato.fotos.length)
-                }
-              ></Pressable>
-            </View>
+                <Pressable
+                  accessibilityLabel="Próxima foto"
+                  style={[styles.controleFoto, styles.controleFotoDireita]}
+                  onPress={() => {
+                    if (fotoIndex < fotos.length - 1) {
+                      onFotoChange(fotoIndex + 1);
+                    }
+                  }}
+                />
+              </View>
+            )}
 
             {!zoomAtivo && (
               <View style={styles.informacoes}>
-                <Text style={styles.nome}>
-                  {candidato.nome}, {candidato.idade}
-                </Text>
+                <View style={styles.cabecalhoInfo}>
+                  <Text style={styles.nome} numberOfLines={1}>
+                    {candidato.nome}, {candidato.idade}
+                  </Text>
+                  <Pressable
+                    accessibilityLabel="Informações do candidato"
+                    accessibilityRole="button"
+                    style={styles.botaoInfo}
+                    onPress={onShowDetails}
+                  >
+                    <MaterialCommunityIcons
+                      name="information-outline"
+                      size={24}
+                      color="#FFFFFF"
+                    />
+                  </Pressable>
+                </View>
 
                 <Text style={styles.localizacao}>
                   <MaterialCommunityIcons
@@ -439,7 +460,7 @@ const styles = StyleSheet.create({
   },
   foto: {
     flex: 1,
-    justifyContent: "space-between",
+    justifyContent: "flex-end",
   },
   imagem: {
     position: "absolute",
@@ -450,11 +471,15 @@ const styles = StyleSheet.create({
     borderRadius: 18,
   },
   fotoIndicadores: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
     flexDirection: "row",
     gap: 4,
     paddingHorizontal: 10,
     paddingTop: 12,
-    zIndex: 3,
+    zIndex: 5,
   },
   areaIndicador: {
     flex: 1,
@@ -477,26 +502,50 @@ const styles = StyleSheet.create({
   },
 
   controleFoto: {
-    width: 100,
+    width: "45%",
     height: "100%",
-    borderRadius: 20,
     justifyContent: "center",
     alignItems: "center",
+  },
+  controleFotoEsquerda: {
+    left: 0,
+  },
+  controleFotoDireita: {
+    right: 0,
   },
   areaFoto: {
     flex: 1,
   },
   informacoes: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
     paddingHorizontal: 18,
     paddingTop: 50,
     paddingBottom: 8,
     backgroundColor: "rgba(0,0,0,0.64)",
-    zIndex: 2,
+    zIndex: 4,
+  },
+  cabecalhoInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  botaoInfo: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    alignItems: "center",
+    justifyContent: "center",
+    marginLeft: 10,
   },
   nome: {
     color: "#FFFFFF",
-    fontSize: 29,
+    fontSize: 28,
     fontWeight: "bold",
+    flex: 1,
   },
   localizacao: {
     color: "#FFFFFF",

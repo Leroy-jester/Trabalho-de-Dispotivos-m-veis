@@ -113,12 +113,15 @@ export default function Dev() {
         quality: 0.8,
       });
 
-      if (!resultado.canceled) {
+      if (!resultado.canceled && resultado.assets) {
         const novasFotos = resultado.assets
           .map((foto) => foto.uri)
-          .slice(0, restantes);
+          .filter(Boolean);
 
-        setFotos((atuais) => [...atuais, ...novasFotos].slice(0, LIMITE_FOTOS));
+        setFotos((atuais) => {
+          const semDuplicados = novasFotos.filter((uri) => !atuais.includes(uri));
+          return [...atuais, ...semDuplicados].slice(0, LIMITE_FOTOS);
+        });
       }
     } catch {
       Alert.alert(
@@ -155,10 +158,15 @@ export default function Dev() {
         quality: 0.8,
       });
 
-      if (!resultado.canceled && resultado.assets[0]) {
+      if (!resultado.canceled && resultado.assets?.[0]?.uri) {
         const novaFoto = resultado.assets[0].uri;
 
-        setFotos((atuais) => [...atuais, novaFoto].slice(0, LIMITE_FOTOS));
+        setFotos((atuais) => {
+          if (atuais.includes(novaFoto)) {
+            return atuais;
+          }
+          return [...atuais, novaFoto].slice(0, LIMITE_FOTOS);
+        });
       }
     } catch {
       Alert.alert(

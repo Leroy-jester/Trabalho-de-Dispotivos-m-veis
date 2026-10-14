@@ -123,8 +123,17 @@ export function RecruitmentProvider({ children }: { children: ReactNode }) {
         const dados = await AsyncStorage.getItem(STORAGE_KEY);
 
         if (dados !== null) {
-          const candidatosSalvos: Candidate[] = JSON.parse(dados);
-          setCandidatos(candidatosSalvos);
+          const candidatosSalvos: any[] = JSON.parse(dados);
+          const normalizados: Candidate[] = candidatosSalvos.map((c) => ({
+            ...c,
+            fotos:
+              Array.isArray(c.fotos) && c.fotos.length > 0
+                ? c.fotos
+                : c.foto
+                  ? [c.foto]
+                  : [],
+          }));
+          setCandidatos(normalizados);
         }
       } catch (erro) {
         console.error("Erro ao carregar candidatos:", erro);
