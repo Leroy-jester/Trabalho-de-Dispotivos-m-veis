@@ -448,12 +448,8 @@ export default function Dev() {
         fotos,
       });
 
-      Alert.alert("Perfil atualizado", "Suas alterações foram salvas.", [
-        {
-          text: "OK",
-          onPress: () => router.replace("/dev-perfil"),
-        },
-      ]);
+      Keyboard.dismiss();
+      router.replace("/dev-perfil");
 
       return;
     }
