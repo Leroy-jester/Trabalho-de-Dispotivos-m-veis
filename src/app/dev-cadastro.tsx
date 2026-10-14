@@ -1,7 +1,8 @@
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRecruitment } from "@/contexts/recruitment-context";
 import {
   Alert,
@@ -19,15 +20,20 @@ import {
 
 const TOTAL_ETAPAS = 5;
 const LIMITE_FOTOS = 3;
+const ANO_MINIMO = 1950;
+const ANO_ATUAL = new Date().getFullYear();
+const ANO_MAXIMO_FORMACAO = ANO_ATUAL + 10;
+const ANO_MAXIMO_EXPERIENCIA = ANO_ATUAL + 1;
 
 type CampoProps = {
   label: string;
   placeholder: string;
   value: string;
   onChangeText: (texto: string) => void;
-  keyboardType?: "default" | "numeric" | "email-address";
+  keyboardType?: "default" | "numeric" | "email-address" | "number-pad" | "url";
   multiline?: boolean;
   autoCapitalize?: "none" | "sentences" | "words" | "characters";
+  maxLength?: number;
 };
 
 function Campo({
@@ -38,6 +44,7 @@ function Campo({
   keyboardType = "default",
   multiline = false,
   autoCapitalize = "sentences",
+  maxLength,
 }: CampoProps) {
   return (
     <View style={styles.cadastroInput}>
@@ -51,6 +58,7 @@ function Campo({
         keyboardType={keyboardType}
         autoCapitalize={autoCapitalize}
         multiline={multiline}
+        maxLength={maxLength}
         textAlignVertical={multiline ? "top" : "center"}
         style={[styles.textInput, multiline && styles.textArea]}
       />
@@ -83,6 +91,28 @@ export default function Dev() {
   const [redesSociais, setRedesSociais] = useState("");
   const { adicionarCandidato } = useRecruitment();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const scrollRef = useRef<ScrollView>(null);
+  const [tecladoVisivel, setTecladoVisivel] = useState(false);
+
+  useEffect(() => {
+    const showEvent =
+      Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
+    const hideEvent =
+      Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
+
+    const showSub = Keyboard.addListener(showEvent, () =>
+      setTecladoVisivel(true),
+    );
+    const hideSub = Keyboard.addListener(hideEvent, () =>
+      setTecladoVisivel(false),
+    );
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   const titulos = [
     "Fotos e dados pessoais",
@@ -180,6 +210,110 @@ export default function Dev() {
     setFotos((atuais) => atuais.filter((_, i) => i !== indice));
   }
 
+  function validarAno(
+    valor: string,
+    nomeCampo: string,
+    anoMaximo: number,
+  ): { valido: boolean; mensagem?: string } {
+    const limpo = valor.trim();
+    if (!limpo) {
+      return { valido: true };
+    }
+
+    if (limpo.length !== 4) {
+      return {
+        valido: false,
+        mensagem: `${nomeCampo} deve ter 4 dígitos (ex.: ${ANO_ATUAL}).`,
+      };
+    }
+
+    const ano = Number(limpo);
+    if (isNaN(ano) || ano < ANO_MINIMO || ano > anoMaximo) {
+      return {
+        valido: false,
+        mensagem: `${nomeCampo} deve ser um ano plausível entre ${ANO_MINIMO} e ${anoMaximo}.`,
+      };
+    }
+
+    return { valido: true };
+  }
+
+  function validarFormacao(): boolean {
+    if (formacaoInicio.trim()) {
+      const resInicio = validarAno(
+        formacaoInicio,
+        "O ano de início da formação",
+        ANO_MAXIMO_FORMACAO,
+      );
+      if (!resInicio.valido) {
+        Alert.alert("Ano inválido", resInicio.mensagem);
+        return false;
+      }
+    }
+
+    if (formacaoFim.trim()) {
+      const resFim = validarAno(
+        formacaoFim,
+        "O ano de término da formação",
+        ANO_MAXIMO_FORMACAO,
+      );
+      if (!resFim.valido) {
+        Alert.alert("Ano inválido", resFim.mensagem);
+        return false;
+      }
+    }
+
+    if (formacaoInicio.trim() && formacaoFim.trim()) {
+      if (Number(formacaoInicio) > Number(formacaoFim)) {
+        Alert.alert(
+          "Período inconsistente",
+          `O ano de início da formação (${formacaoInicio}) não pode ser maior que o ano de término (${formacaoFim}).`,
+        );
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  function validarExperiencia(): boolean {
+    if (experienciaInicio.trim()) {
+      const resInicio = validarAno(
+        experienciaInicio,
+        "O ano de início da experiência",
+        ANO_MAXIMO_EXPERIENCIA,
+      );
+      if (!resInicio.valido) {
+        Alert.alert("Ano inválido", resInicio.mensagem);
+        return false;
+      }
+    }
+
+    if (experienciaFim.trim()) {
+      const resFim = validarAno(
+        experienciaFim,
+        "O ano de término da experiência",
+        ANO_MAXIMO_EXPERIENCIA,
+      );
+      if (!resFim.valido) {
+        Alert.alert("Ano inválido", resFim.mensagem);
+        return false;
+      }
+    }
+
+    if (experienciaInicio.trim() && experienciaFim.trim()) {
+      if (Number(experienciaInicio) > Number(experienciaFim)) {
+        Alert.alert(
+          "Período inconsistente",
+          `O ano de início da experiência (${experienciaInicio}) não pode ser maior que o ano de término (${experienciaFim}).`,
+        );
+        return false;
+      }
+    }
+
+    return true;
+  }
+
   function validarDadosPessoais() {
     if (!nome.trim() || !email.trim() || !idade.trim() || !localizacao.trim()) {
       Alert.alert(
@@ -194,8 +328,12 @@ export default function Dev() {
       return false;
     }
 
-    if (Number(idade) <= 0) {
-      Alert.alert("Idade inválida", "Digite uma idade válida.");
+    const idadeNum = Number(idade);
+    if (isNaN(idadeNum) || idadeNum < 14 || idadeNum > 100) {
+      Alert.alert(
+        "Idade inválida",
+        "Digite uma idade válida entre 14 e 100 anos.",
+      );
       return false;
     }
 
@@ -214,33 +352,54 @@ export default function Dev() {
     if (etapa === 0 && !validarDadosPessoais()) {
       return;
     }
+    if (etapa === 1 && !validarFormacao()) {
+      return;
+    }
+    if (etapa === 2 && !validarExperiencia()) {
+      return;
+    }
 
     Keyboard.dismiss();
     setEtapa((atual) => Math.min(atual + 1, TOTAL_ETAPAS - 1));
+    scrollRef.current?.scrollTo({ y: 0, animated: false });
   }
 
   function etapaAnterior() {
     Keyboard.dismiss();
     setEtapa((atual) => Math.max(atual - 1, 0));
+    scrollRef.current?.scrollTo({ y: 0, animated: false });
   }
-
 
   function finalizarCadastro() {
     if (!validarDadosPessoais()) {
       setEtapa(0);
       return;
     }
+    if (!validarFormacao()) {
+      setEtapa(1);
+      return;
+    }
+    if (!validarExperiencia()) {
+      setEtapa(2);
+      return;
+    }
 
     adicionarCandidato({
       nome: nome.trim(),
+      email: email.trim(),
       idade: Number(idade),
       localizacao: localizacao.trim(),
       sobre: sobreMim.trim(),
-      linguagens: linguagens.trim(),
       formacao: formacao.trim(),
+      formacaoInicio: formacaoInicio.trim(),
+      formacaoFim: formacaoFim.trim(),
       experiencia: experiencia.trim(),
+      experienciaInicio: experienciaInicio.trim(),
+      experienciaFim: experienciaFim.trim(),
+      linguagens: linguagens.trim(),
       projetos: projetos.trim(),
       pretensaoSalarial: pretensaoSalarial.trim(),
+      redesSociais: redesSociais.trim(),
       fotos,
     });
 
@@ -260,10 +419,11 @@ export default function Dev() {
 
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       <KeyboardAvoidingView
         style={styles.scroll}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? insets.top : 0}
       >
         {/* Cabeçalho e progresso */}
         <View style={styles.header}>
@@ -286,10 +446,16 @@ export default function Dev() {
         </View>
 
         <ScrollView
+          ref={scrollRef}
           style={styles.stepScroll}
-          contentContainerStyle={styles.stepContent}
+          contentContainerStyle={[
+            styles.stepContent,
+            { paddingBottom: tecladoVisivel ? 140 : 30 },
+          ]}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          automaticallyAdjustKeyboardInsets={Platform.OS === "ios"}
         >
           {/* ETAPA 1: Fotos e dados pessoais */}
           {etapa === 0 && (
@@ -391,8 +557,11 @@ export default function Dev() {
                 label="Idade"
                 placeholder="Adicione sua idade"
                 value={idade}
-                onChangeText={setIdade}
-                keyboardType="numeric"
+                onChangeText={(texto) =>
+                  setIdade(texto.replace(/\D/g, "").slice(0, 3))
+                }
+                keyboardType="number-pad"
+                maxLength={3}
               />
 
               <Campo
@@ -435,8 +604,11 @@ export default function Dev() {
                       label="Início"
                       placeholder="Ex.: 2024"
                       value={formacaoInicio}
-                      onChangeText={setFormacaoInicio}
-                      keyboardType="numeric"
+                      onChangeText={(texto) =>
+                        setFormacaoInicio(texto.replace(/\D/g, "").slice(0, 4))
+                      }
+                      keyboardType="number-pad"
+                      maxLength={4}
                     />
                   </View>
 
@@ -445,11 +617,17 @@ export default function Dev() {
                       label="Fim"
                       placeholder="Ex.: 2027"
                       value={formacaoFim}
-                      onChangeText={setFormacaoFim}
-                      keyboardType="numeric"
+                      onChangeText={(texto) =>
+                        setFormacaoFim(texto.replace(/\D/g, "").slice(0, 4))
+                      }
+                      keyboardType="number-pad"
+                      maxLength={4}
                     />
                   </View>
                 </View>
+                <Text style={styles.ajudaData}>
+                  Deixe o fim em branco se o curso ainda estiver em andamento.
+                </Text>
               </View>
             </>
           )}
@@ -469,27 +647,39 @@ export default function Dev() {
                 onChangeText={setExperiencia}
               />
 
-              <Text style={styles.cadastroText}>Período da experiência</Text>
+              <View style={styles.cadastroInput}>
+                <Text style={styles.cadastroText}>Período da experiência</Text>
 
-              <View style={styles.datas}>
-                <View style={styles.campoData}>
-                  <Campo
-                    label="Início"
-                    placeholder="Ex.: 2025"
-                    value={experienciaInicio}
-                    onChangeText={setExperienciaInicio}
-                    keyboardType="numeric"
-                  />
-                </View>
+                <View style={styles.datas}>
+                  <View style={styles.campoData}>
+                    <Campo
+                      label="Início"
+                      placeholder="Ex.: 2025"
+                      value={experienciaInicio}
+                      onChangeText={(texto) =>
+                        setExperienciaInicio(texto.replace(/\D/g, "").slice(0, 4))
+                      }
+                      keyboardType="number-pad"
+                      maxLength={4}
+                    />
+                  </View>
 
-                <View style={styles.campoData}>
-                  <Campo
-                    label="Fim"
-                    placeholder="Atual"
-                    value={experienciaFim}
-                    onChangeText={setExperienciaFim}
-                  />
+                  <View style={styles.campoData}>
+                    <Campo
+                      label="Fim"
+                      placeholder="Atual (ou ano)"
+                      value={experienciaFim}
+                      onChangeText={(texto) =>
+                        setExperienciaFim(texto.replace(/\D/g, "").slice(0, 4))
+                      }
+                      keyboardType="number-pad"
+                      maxLength={4}
+                    />
+                  </View>
                 </View>
+                <Text style={styles.ajudaData}>
+                  Deixe o fim em branco se for sua experiência atual.
+                </Text>
               </View>
             </>
           )}
@@ -538,6 +728,8 @@ export default function Dev() {
                 placeholder="LinkedIn, GitHub ou portfólio"
                 value={redesSociais}
                 onChangeText={setRedesSociais}
+                keyboardType="url"
+                autoCapitalize="none"
               />
 
               <View style={styles.resumoCadastro}>
@@ -557,7 +749,12 @@ export default function Dev() {
         </ScrollView>
 
         {/* Navegação entre as etapas */}
-        <View style={styles.navegacao}>
+        <View
+          style={[
+            styles.navegacao,
+            { paddingBottom: Math.max(insets.bottom, 14) },
+          ]}
+        >
           <Pressable
             disabled={etapa === 0}
             style={[
@@ -762,6 +959,12 @@ const styles = StyleSheet.create({
   },
   campoData: {
     flex: 1,
+  },
+  ajudaData: {
+    color: "#888888",
+    fontSize: 12,
+    marginTop: 4,
+    lineHeight: 16,
   },
   navegacao: {
     flexDirection: "row",
