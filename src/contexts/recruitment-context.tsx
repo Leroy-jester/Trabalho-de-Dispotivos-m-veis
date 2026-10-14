@@ -1,6 +1,11 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
-import AsyncStorage from
-  "@react-native-async-storage/async-storage";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  type ReactNode,
+} from "react";
 const STORAGE_KEY = "@recrutadev:candidatos";
 
 export type Candidate = {
@@ -37,9 +42,9 @@ const candidatosIniciais: Candidate[] = [
     projetos: "Portfólio pessoal e aplicações web.",
     pretensaoSalarial: "R$ 4.000,00",
     fotos: [
-      "https://randomuser.me/api/portraits/women/44.jpg",
-      "https://randomuser.me/api/portraits/women/68.jpg",
-      "https://randomuser.me/api/portraits/women/65.jpg",
+      "https://images.unsplash.com/photo-1585598007006-2995ea95e22a?w=400&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=NHwxMjA3fDA%3D",
+      "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=400&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=NHwxMjA3fDA%3D",
+      "https://plus.unsplash.com/premium_photo-1673039393866-130d3d092b66?w=400&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=NHwxMjA3fDA%3D",
     ],
   },
   {
@@ -55,9 +60,9 @@ const candidatosIniciais: Candidate[] = [
     projetos: "Aplicativos mobile e APIs.",
     pretensaoSalarial: "R$ 5.000,00",
     fotos: [
-      "https://randomuser.me/api/portraits/men/32.jpg",
-      "https://randomuser.me/api/portraits/men/75.jpg",
-      "https://randomuser.me/api/portraits/men/52.jpg",
+      "https://images.unsplash.com/photo-1605980776566-0486c3ac7617?w=400&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=NHwxMjA3fDA%3D",
+      "https://images.unsplash.com/photo-1584119164246-461d43e9bab3?w=400&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=NHwxMjA3fDA%3D",
+      "https://images.unsplash.com/photo-1643904524951-2a3a58856745?w=400&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=NHwxMjA3fDA%3D",
     ],
   },
   {
@@ -72,9 +77,9 @@ const candidatosIniciais: Candidate[] = [
     projetos: "Projetos acadêmicos e aplicações Python.",
     pretensaoSalarial: "R$ 3.500,00",
     fotos: [
-      "https://randomuser.me/api/portraits/women/49.jpg",
-      "https://randomuser.me/api/portraits/women/33.jpg",
-      "https://randomuser.me/api/portraits/women/21.jpg",
+      "https://images.unsplash.com/photo-1529946179074-87642f6204d7?w=400&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=NHwxMjA3fDA%3D",
+      "https://images.unsplash.com/photo-1614622539136-fd8e06f32f31?w=400&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=NHwxMjA3fDA%3D5",
+      "https://plus.unsplash.com/premium_photo-1661391295164-cdf5902bbd98?w=400&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=NHwxMjA3fDA%3D",
     ],
   },
 ];
@@ -93,7 +98,7 @@ type RecruitmentContextData = {
   ultimoDescartadoId: string | null;
   desfazerDescarte: () => string | null;
   adicionarCandidato: (dados: Omit<Candidate, "id">) => Candidate;
-  atualizarCandidato: (  id: string,  dados: Omit<Candidate, "id">) => void;
+  atualizarCandidato: (id: string, dados: Omit<Candidate, "id">) => void;
   excluirCandidato: (id: string) => void;
   perfilAtualId: string | null;
   sairDoPerfil: () => Promise<void>;
@@ -130,11 +135,13 @@ export function RecruitmentProvider({ children }: { children: ReactNode }) {
           const normalizados: Candidate[] = candidatosSalvos.map((c) => ({
             ...c,
             fotos:
-              Array.isArray(c.fotos) && c.fotos.length > 0
+              candidatosIniciais.find((exemplo) => exemplo.id === c.id)
+                ?.fotos ??
+              (Array.isArray(c.fotos) && c.fotos.length > 0
                 ? c.fotos
                 : c.foto
                   ? [c.foto]
-                  : [],
+                  : []),
           }));
           setCandidatos(normalizados);
         }
@@ -151,12 +158,11 @@ export function RecruitmentProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!carregado) return;
 
-    AsyncStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify(candidatos),
-    ).catch((erro) => {
-      console.error("Erro ao salvar candidatos:", erro);
-    });
+    AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(candidatos)).catch(
+      (erro) => {
+        console.error("Erro ao salvar candidatos:", erro);
+      },
+    );
   }, [candidatos, carregado]);
 
   useEffect(() => {
@@ -176,8 +182,6 @@ export function RecruitmentProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  
-
   const adicionarCandidato = (dados: Omit<Candidate, "id">) => {
     const novoCandidato: Candidate = {
       ...dados,
@@ -187,42 +191,38 @@ export function RecruitmentProvider({ children }: { children: ReactNode }) {
     setCandidatos((atuais) => [...atuais, novoCandidato]);
     setPerfilAtualId(novoCandidato.id);
 
-    AsyncStorage.setItem("@recrutadev:perfil-atual", novoCandidato.id)
-      .catch((erro) => {
+    AsyncStorage.setItem("@recrutadev:perfil-atual", novoCandidato.id).catch(
+      (erro) => {
         console.error("Erro ao salvar perfil atual:", erro);
-      });
+      },
+    );
 
     return novoCandidato;
   };
 
-  const atualizarCandidato = (
-    id: string,
-    dados: Omit<Candidate, "id">
-  ) => {
+  const atualizarCandidato = (id: string, dados: Omit<Candidate, "id">) => {
     setCandidatos((atuais) =>
       atuais.map((candidato) =>
-        candidato.id === id
-          ? { ...candidato, ...dados, id }
-          : candidato
-      )
+        candidato.id === id ? { ...candidato, ...dados, id } : candidato,
+      ),
     );
   };
 
   const excluirCandidato = (id: string) => {
     setCandidatos((atuais) =>
-      atuais.filter((candidato) => candidato.id !== id)
+      atuais.filter((candidato) => candidato.id !== id),
     );
 
     setAprovadosIds((atuais) =>
-      atuais.filter((candidatoId) => candidatoId !== id)
+      atuais.filter((candidatoId) => candidatoId !== id),
     );
 
     setDescartadosIds((atuais) =>
-      atuais.filter((candidatoId) => candidatoId !== id)
+      atuais.filter((candidatoId) => candidatoId !== id),
     );
 
     setPrioritariosIds((atuais) =>
-      atuais.filter((candidatoId) => candidatoId !== id)
+      atuais.filter((candidatoId) => candidatoId !== id),
     );
 
     setUltimoDescartadoId((atual) => (atual === id ? null : atual));
@@ -235,8 +235,6 @@ export function RecruitmentProvider({ children }: { children: ReactNode }) {
       });
     }
   };
-
-  
 
   function aprovar(id: string) {
     setAprovadosIds((atuais) =>
