@@ -1,19 +1,55 @@
 # Devinder
 
-Aplicativo mobile desenvolvido com React Native e Expo, com foco na apresentação de perfis de desenvolvedores e na avaliação de candidatos por recrutadores.
+Aplicativo mobile desenvolvido com React Native, Expo e TypeScript. O Devinder permite que desenvolvedores montem seus perfis e que recrutadores visualizem e avaliem candidatos.
+
+## Protótipo no Figma
+
+Link do Figma: https://www.figma.com/design/BXCS9xKIastcjzZY3n6ci6/Devinder?node-id=0-1&t=6fBipoXUDteyAMXc-1
+
+## Capturas de tela
+
+Adicione as capturas de tela do aplicativo na pasta `docs/screenshots/` do repositório, usando os nomes indicados abaixo. As imagens aparecerão nesta seção depois que forem adicionadas e enviadas ao GitHub.
+
+### Tela inicial
+
+![Tela inicial do Devinder](docs/screenshots/tela-inicial.png)
+
+### Cadastro de desenvolvedor
+
+![Cadastro de desenvolvedor](docs/screenshots/cadastro-desenvolvedor.png)
+
+### Perfil do desenvolvedor
+
+![Perfil do desenvolvedor](docs/screenshots/perfil-desenvolvedor.png)
+
+### Descoberta de candidatos
+
+![Tela de descoberta de candidatos](docs/screenshots/descoberta-candidatos.png)
+
+### Detalhes do candidato
+
+![Detalhes do candidato](docs/screenshots/detalhes-candidato.png)
+
+### Lista de candidatos aprovados
+
+![Lista de candidatos aprovados](docs/screenshots/lista-aprovados.png)
+
+### Apresentação do plano PRO
+
+![Janela de apresentação do plano PRO](docs/screenshots/modal-pro.png)
 
 ## 1. Tecnologias utilizadas
 
-- **React Native:** construção da interface do aplicativo.
+- **React Native:** construção das interfaces mobile.
 - **Expo:** ambiente e ferramentas de desenvolvimento.
-- **Expo Router:** navegação entre telas.
+- **Expo Router:** navegação entre as telas.
 - **TypeScript:** tipagem do código.
 - **AsyncStorage:** armazenamento local dos candidatos cadastrados.
 - **Expo Image Picker:** seleção de imagens da galeria e captura de fotos.
-- **React Native Gesture Handler, React Native Reanimated e React Native Worklets:** suporte a gestos e animações nos cartões de candidatos.
+- **React Native Gesture Handler, Reanimated e Worklets:** gestos e animações dos cartões de candidatos.
 - **MaterialCommunityIcons (`@expo/vector-icons`):** ícones da interface.
 
-As dependências e os scripts estão declarados em `package.json`.
+As dependências e os scripts do projeto estão declarados em `package.json`.
 
 ## 2. Como executar o projeto
 
@@ -21,7 +57,7 @@ As dependências e os scripts estão declarados em `package.json`.
 
 - Node.js instalado.
 - npm instalado.
-- Expo Go ou ambiente de execução compatível com o projeto.
+- Expo Go ou um ambiente de execução compatível com o projeto.
 
 ### Instalação
 
@@ -37,15 +73,13 @@ npm install
 npx expo start
 ```
 
-O projeto também declara os seguintes scripts:
+O projeto também declara os comandos abaixo, conforme o ambiente configurado:
 
 ```bash
 npm run android
 npm run ios
 npm run web
 ```
-
-A disponibilidade de cada opção depende do ambiente configurado.
 
 ## 3. Estrutura do projeto
 
@@ -54,6 +88,7 @@ src/
 ├── app/
 │   ├── index.tsx
 │   ├── dev-cadastro.tsx
+│   ├── dev-perfil.tsx
 │   ├── _layout.tsx
 │   └── recrutador/
 │       ├── index.tsx
@@ -68,139 +103,88 @@ src/
 
 assets/
 └── images/
+
+docs/
+└── screenshots/
 ```
 
 ### Principais arquivos
 
-- `src/app/index.tsx`: tela inicial com opções para acessar o cadastro de desenvolvedor ou a área de recrutador.
-- `src/app/dev-cadastro.tsx`: formulário de cadastro de desenvolvedor.
-- `src/app/recrutador/index.tsx`: tela de descoberta e avaliação de candidatos.
+- `src/app/index.tsx`: tela inicial com acesso à área de desenvolvedor e à área de recrutador.
+- `src/app/dev-cadastro.tsx`: cadastro e edição dos dados do desenvolvedor.
+- `src/app/dev-perfil.tsx`: visualização, edição e exclusão do perfil do desenvolvedor.
+- `src/app/recrutador/index.tsx`: descoberta e avaliação de candidatos.
 - `src/app/recrutador/lista.tsx`: lista de candidatos aprovados.
 - `src/app/recrutador/_layout.tsx`: navegação por abas da área de recrutador.
 - `src/components/button.tsx`: componente reutilizável de botão.
-- `src/components/candidate-card.tsx`: cartão de candidato com imagens, gestos e ações de avaliação.
-- `src/contexts/recruitment-context.tsx`: estado compartilhado dos candidatos, aprovações, descartes, prioridades e disparos.
+- `src/components/candidate-card.tsx`: cartão de candidato com fotos, gestos e ações de avaliação.
+- `src/contexts/recruitment-context.tsx`: estado compartilhado e operações relacionadas aos candidatos.
 - `package.json`: dependências e comandos do projeto.
-- `app.json`: configurações do aplicativo Expo.
+- `app.json`: configurações do Expo.
 
-## 4. Funcionalidades implementadas
+## 4. Funcionalidades
 
 ### 4.1. Tela inicial
 
-A tela inicial apresenta a marca Devinder e duas opções de acesso:
+Apresenta a marca Devinder e opções para entrar como desenvolvedor ou recrutador.
 
-- **Entrar como dev:** direciona ao formulário de cadastro.
-- **Entrar como recrutador:** direciona à área de descoberta de candidatos.
+### 4.2. Cadastro e perfil de desenvolvedor
 
-### 4.2. Cadastro de desenvolvedor
+O formulário de cadastro é dividido em cinco etapas:
 
-O formulário está organizado em cinco etapas:
+1. **Fotos e dados pessoais:** nome, e-mail, idade, localização e fotos.
+2. **Sobre você:** descrição pessoal.
+3. **Formação e experiência:** informações de formação e experiência profissional, incluindo períodos.
+4. **Tecnologias e projetos:** linguagens, tecnologias e projetos desenvolvidos.
+5. **Informações finais:** pretensão salarial e redes sociais.
 
-1. **Fotos e dados pessoais:** nome, e-mail, idade, localização e seleção de fotos.
-2. **Sobre você:** descrição pessoal do desenvolvedor.
-3. **Formação e experiência:** informações de formação e experiência profissional, incluindo campos de período.
-4. **Tecnologias e projetos:** linguagens/tecnologias e projetos.
-5. **Informações finais:** pretensão salarial, redes sociais e finalização do cadastro.
-
-O formulário permite selecionar imagens da galeria e tirar fotos, limita o cadastro a três fotos e oferece ações para navegar entre as etapas. Ao finalizar, os dados são enviados ao contexto compartilhado.
-
-**Validação dos campos:**  
-Esta seção será detalhada após a implementação e validação das regras de preenchimento e dos cenários de erro.
+O formulário permite selecionar fotos da galeria ou usar a câmera, quando disponível, e aceita até três fotos. Também permite editar e excluir um perfil. Os candidatos cadastrados são armazenados localmente.
 
 ### 4.3. Descoberta e avaliação de candidatos
 
-A área de recrutador apresenta os perfis em cartões e oferece:
+A área de recrutador exibe candidatos em cartões e oferece:
 
-- Visualização de imagens do perfil e navegação entre fotos.
-- Gesto horizontal para avaliar o candidato: um movimento aprova e o movimento oposto descarta.
-- Ações de aprovação e descarte ligadas ao estado compartilhado.
-- Abertura de uma área com detalhes do perfil.
-- Contadores de candidatos aprovados, descartados e disparos.
-- Mensagem ao chegar ao fim dos perfis, com opção de reiniciar a visualização.
-
-**Validação dos gestos e animações:**  
-Esta seção será detalhada após a execução e validação do comportamento em dispositivos ou emuladores.
+- Visualização e navegação entre as fotos do perfil.
+- Gesto horizontal para aprovar ou descartar candidatos.
+- Controles para aprovar, descartar e marcar um candidato como prioritário por meio de disparo.
+- Abertura dos detalhes do candidato, incluindo o gesto para cima.
+- Contadores relacionados às ações de recrutamento.
+- Mensagem ao chegar ao final dos perfis, com opção de reiniciar a visualização.
+- Zoom da foto por gesto de pinça, conforme o suporte do ambiente de execução.
 
 ### 4.4. Detalhes do candidato
 
-A área de detalhes apresenta informações do perfil, incluindo:
-
-- Nome, idade e localização.
-- Descrição pessoal.
-- Formação.
-- Experiência.
-- Linguagens e tecnologias.
-- Projetos.
-
-A pretensão salarial aparece bloqueada na interface e direciona para a apresentação do plano PRO.
-
-**Regras de acesso às informações restritas:**  
-Esta seção será detalhada após a implementação e validação das regras de acesso.
+A área de detalhes apresenta dados como nome, idade, localização, descrição pessoal, formação, experiência, tecnologias e projetos. A pretensão salarial é apresentada como informação restrita para o plano Free.
 
 ### 4.5. Lista de candidatos aprovados
 
-A aba **Lista** exibe os candidatos aprovados. Os candidatos marcados como prioritários aparecem antes dos demais aprovados, e os prioritários recebem um indicador visual.
+A aba **Lista** reúne os candidatos aprovados. Os candidatos marcados como prioritários aparecem antes dos demais aprovados e recebem um indicador visual. Quando não há candidatos aprovados, a tela exibe uma mensagem de lista vazia.
 
-Quando não existem candidatos aprovados, a tela exibe uma mensagem de lista vazia.
+### 4.6. Armazenamento local
 
-**Persistência e validação da ordenação:**  
-Esta seção será detalhada após a implementação e os testes do comportamento esperado.
+O contexto `recruitment-context.tsx` utiliza AsyncStorage, com a chave `@recrutadev:candidatos`, para carregar e salvar a lista de candidatos. O projeto também contém perfis de demonstração definidos no código.
 
-### 4.6. Persistência local
+## 5. Plano Free e recursos PRO
 
-O contexto `recruitment-context.tsx` utiliza AsyncStorage, com a chave `@recrutadev:candidatos`, para carregar e salvar localmente a lista de candidatos.
+O projeto apresenta uma experiência Free e uma janela informativa do RecrutaDEV PRO. Os recursos de plano estão simulados no aplicativo, sem integração com um serviço de assinatura ou pagamento.
 
-O código contém perfis iniciais de demonstração e salva a coleção de candidatos quando ela é alterada.
+### Plano Free
 
-O armazenamento identificado grava a lista de candidatos. A persistência de aprovações, descartes, prioridades e disparos após fechar e reabrir o aplicativo ainda não está demonstrada pela implementação atual.
+- Avaliação normal de candidatos por aprovação e descarte.
+- Limite de três disparos por sessão.
+- Pretensão salarial protegida por um bloqueio visual.
+- Apresentação da janela PRO quando uma ação restrita é solicitada.
 
-**Persistência dos demais dados de recrutamento:**  
-Esta seção será detalhada após a implementação e validação do armazenamento dessas informações.
+### Recursos previstos para o PRO
 
-## 5. Funcionalidades premium
+- Disparos sem o limite do plano Free.
+- Acesso à pretensão salarial.
+- Recurso para desfazer o último descarte (Revert).
+- Análise do candidato.
 
-Esta seção descreve os recursos PRO presentes na interface e o estado atual de sua implementação.
+**Observação:** a janela PRO é informativa. O projeto não possui fluxo de compra, cobrança ou gerenciamento de assinatura. A funcionalidade específica de análise do candidato e a validação completa de todos os recursos PRO ainda precisam ser concluídas ou demonstradas nos testes.
 
-### 5.1. Limite de disparos no plano Free
-
-O código permite até três disparos por sessão no estado atual. Quando o limite é atingido, a ação não é executada e a janela de apresentação do PRO é exibida.
-
-O contador de disparos é mantido em memória e não é persistido no AsyncStorage. O valor de `isPro` está definido como `false` no contexto.
-
-**Ativação e regras definitivas dos planos:**  
-Esta seção será detalhada após a implementação das regras de assinatura e da ativação do plano PRO.
-
-### 5.2. Acesso à pretensão salarial
-
-A pretensão salarial é apresentada como informação restrita na área de detalhes do candidato. Ao tocar no campo bloqueado, a tela abre a janela de apresentação do RecrutaDEV PRO.
-
-**Acesso para usuários PRO:**  
-Esta seção será detalhada após a implementação e validação das regras de acesso à informação.
-
-### 5.3. Desfazer o último descarte
-
-Existe uma função de desfazer o último descarte no contexto e uma verificação de plano na tela de recrutador. Como `isPro` está definido como `false`, a ação abre a janela PRO em vez de desfazer o descarte.
-
-**Funcionamento para usuários PRO:**  
-Esta seção será detalhada após a implementação e os testes do fluxo de desfazer, incluindo a atualização dos contadores e da lista de candidatos.
-
-### 5.4. Análise do candidato
-
-A janela PRO menciona a análise do candidato como um recurso exclusivo. A funcionalidade específica de análise ainda precisa ser implementada.
-
-**Descrição da funcionalidade:**  
-Será detalhada após a implementação do recurso, incluindo seu objetivo, informações apresentadas e forma de utilização.
-
-### 5.5. Janela de apresentação do PRO
-
-A tela de recrutador contém uma janela com o título RecrutaDEV PRO, texto explicativo dos benefícios e botão **Entendi**, que fecha a janela.
-
-A janela é informativa. Não há fluxo de compra, cobrança, gerenciamento de assinatura ou ativação de conta PRO identificado na implementação atual.
-
-**Fluxo de assinatura e ativação do PRO:**  
-Será detalhado após a implementação.
-
-## 6. Dados do perfil de desenvolvedor
+## 6. Dados dos candidatos
 
 O tipo `Candidate`, definido no contexto, contempla os seguintes campos:
 
@@ -220,89 +204,24 @@ O tipo `Candidate`, definido no contexto, contempla os seguintes campos:
 - `experienciaInicio` e `experienciaFim` (opcionais)
 - `redesSociais` (opcional)
 
-A lista de candidatos inicia com três perfis de demonstração definidos no próprio contexto. As fotos desses perfis usam URLs externas, e sua exibição depende de acesso à internet.
+Os perfis de demonstração usam imagens externas, cuja exibição depende de acesso à internet.
 
-## 7. Especificações do trabalho
+## 7.  Limitações e observações
 
-O projeto possui uma tela inicial, cadastro de desenvolvedor, área de recrutador, avaliação de candidatos, lista de aprovados e apresentação de funcionalidades PRO, conforme descrito nas seções anteriores.
+- O plano PRO está simulado e não há integração com compra ou assinatura real.
+- Os dados dos candidatos são armazenados localmente; o projeto não utiliza uma API remota para esse armazenamento.
+- A lista inicial inclui candidatos de demonstração.
+- A persistência das aprovações, dos descartes, das prioridades e dos disparos deve ser verificada separadamente dos dados dos candidatos.
+- A funcionalidade de análise do candidato precisa ser implementada ou validada.
+- Os resultados dos testes devem ser preenchidos após a execução em dispositivo ou emulador.
 
-A documentação de todos os requisitos acadêmicos deve acompanhar o enunciado oficial do trabalho. Os itens abaixo ficam reservados para registrar requisitos adicionais ou critérios específicos solicitados pelo professor.
+## 8. Integrantes
 
-### 7.1. Requisitos adicionais do enunciado
+- George Lucas
+- Josef Ferreira
+- Gabriel Rangel
+- Lucas Silva
 
-**Requisito:** [Adicionar o requisito conforme o enunciado.]
-
-**Implementação:**  
-Será descrita após a implementação ou confirmação do requisito.
-
-**Arquivos relacionados:**  
-[Preencher após identificar os arquivos correspondentes.]
-
-**Validação:**  
-Será descrita após a realização dos testes.
-
-### 7.2. Funcionalidades incompletas ou ainda não implementadas
-
-#### Ativação real do plano PRO
-
-**Descrição da implementação:**  
-Será detalhada após a implementação.
-
-#### Compra, pagamento ou gerenciamento de assinatura
-
-**Descrição da implementação:**  
-Será detalhada após a implementação.
-
-#### Análise do candidato
-
-**Descrição da implementação:**  
-Será detalhada após a implementação.
-
-#### Persistência de aprovações, descartes, prioridades e disparos
-
-**Descrição da implementação:**  
-Será detalhada após a implementação.
-
-#### Validação dos campos do cadastro e tratamento de erros
-
-**Descrição da implementação:**  
-Será detalhada após a implementação e os testes.
-
-#### Testes em dispositivo ou emulador
-
-**Resultados dos testes:**  
-Serão descritos após a execução dos testes.
-
-## 8. Testes
-
-Marcar os itens após a realização dos testes correspondentes.
-
-- [ ] Instalar as dependências com `npm install`.
-- [ ] Iniciar o projeto com `npx expo start`.
-- [ ] Verificar a navegação entre a tela inicial, cadastro e área do recrutador.
-- [ ] Preencher e finalizar um cadastro.
-- [ ] Testar a seleção de fotos da galeria e o uso da câmera, quando disponível.
-- [ ] Verificar o limite de três fotos.
-- [ ] Testar os gestos de aprovação e descarte.
-- [ ] Conferir a lista de aprovados e a ordenação dos prioritários.
-- [ ] Verificar o comportamento após fechar e reabrir o aplicativo.
-- [ ] Testar o limite de três disparos no estado Free.
-- [ ] Conferir as ações bloqueadas e a abertura e o fechamento da janela PRO.
-- [ ] Comparar os requisitos com o enunciado oficial do trabalho.
-
-## 9. Limitações e observações
-
-- O plano PRO está simulado e não há implementação identificada de compra ou assinatura real.
-- Os dados dos candidatos são armazenados localmente; não foi identificada uma API remota.
-- A lista de perfis inclui dados de demonstração definidos no código.
-- A persistência de aprovações, descartes, prioridades e disparos precisa ser implementada ou validada.
-- A funcionalidade de análise do candidato precisa ser implementada.
-- As regras de validação do cadastro e os resultados de testes serão documentados após sua implementação ou execução.
-
-## 10. Integrantes
-
-- George Lucas, Josef, Gabriel Rangel e Lucas Silva
-
-## 11. Repositório
+## 9. Repositório
 
 https://github.com/Leroy-jester/Trabalho-de-Dispotivos-m-veis

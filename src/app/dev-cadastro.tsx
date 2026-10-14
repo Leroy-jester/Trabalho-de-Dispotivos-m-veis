@@ -69,11 +69,8 @@ function Campo({
 export default function Dev() {
   const { editarId } = useLocalSearchParams<{ editarId?: string }>();
 
-  const {
-    adicionarCandidato,
-    atualizarCandidato,
-    candidatos,
-  } = useRecruitment();
+  const { adicionarCandidato, atualizarCandidato, candidatos } =
+    useRecruitment();
 
   const candidatoEdicao = candidatos.find(
     (item) => item.id === editarId
@@ -210,7 +207,9 @@ export default function Dev() {
           .filter(Boolean);
 
         setFotos((atuais) => {
-          const semDuplicados = novasFotos.filter((uri) => !atuais.includes(uri));
+          const semDuplicados = novasFotos.filter(
+            (uri) => !atuais.includes(uri),
+          );
           return [...atuais, ...semDuplicados].slice(0, LIMITE_FOTOS);
         });
       }
@@ -453,7 +452,7 @@ export default function Dev() {
     if (editarId && !candidatoEdicao) {
       Alert.alert(
         "Perfil não encontrado",
-        "Não foi possível localizar a conta que você deseja editar."
+        "Não foi possível localizar a conta que você deseja editar.",
       );
       return;
     }
@@ -478,12 +477,8 @@ export default function Dev() {
         fotos,
       });
 
-      Alert.alert("Perfil atualizado", "Suas alterações foram salvas.", [
-        {
-          text: "OK",
-          onPress: () => router.replace("/dev-perfil"),
-        },
-      ]);
+      Keyboard.dismiss();
+      router.replace("/dev-perfil");
 
       return;
     }
@@ -509,18 +504,18 @@ export default function Dev() {
 
     Keyboard.dismiss();
 
-    Alert.alert(
-      "Cadastro realizado!",
-      `Perfil de ${nome} cadastrado com sucesso.`,
-      [
-        {
-          text: "OK",
-          onPress: () => router.replace("/"),
-        },
-      ],
-    );
+    router.replace("/dev-perfil");
+    return;
   }
+  function sairDoCadastro() {
+    Keyboard.dismiss();
 
+    if (editarId) {
+      router.replace("/dev-perfil");
+    } else {
+      router.replace("/");
+    }
+  }
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -531,7 +526,20 @@ export default function Dev() {
       >
         {/* Cabeçalho e progresso */}
         <View style={styles.header}>
-          <Text style={styles.titulo}>Crie seu perfil</Text>
+          <View style={styles.headerLinha}>
+            <Text style={styles.titulo}>
+              {editarId ? "Editar perfil" : "Crie seu perfil"}
+            </Text>
+
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Sair do cadastro"
+              style={styles.botaoSair}
+              onPress={sairDoCadastro}
+            >
+              <MaterialCommunityIcons name="close" size={25} color="#FFFFFF" />
+            </Pressable>
+          </View>
 
           <Text style={styles.contadorEtapas}>
             Etapa {etapa + 1} de {TOTAL_ETAPAS}
@@ -761,7 +769,9 @@ export default function Dev() {
                       placeholder="Ex.: 2025"
                       value={experienciaInicio}
                       onChangeText={(texto) =>
-                        setExperienciaInicio(texto.replace(/\D/g, "").slice(0, 4))
+                        setExperienciaInicio(
+                          texto.replace(/\D/g, "").slice(0, 4),
+                        )
                       }
                       keyboardType="number-pad"
                       maxLength={4}
@@ -1129,5 +1139,21 @@ const styles = StyleSheet.create({
     color: "#DDDDDD",
     fontSize: 13,
     lineHeight: 22,
+  },
+  headerLinha: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+
+  botaoSair: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: "#252525",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "#444444",
   },
 });

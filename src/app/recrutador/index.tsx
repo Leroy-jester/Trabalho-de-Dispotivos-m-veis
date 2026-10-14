@@ -59,8 +59,7 @@ export default function Recrutador() {
       return;
     }
 
-    setIndice((atual) => atual + 1);
-    setFotoIndex(0);
+    avancar();
   }
 
   function reiniciar() {
@@ -219,13 +218,17 @@ export default function Recrutador() {
                     setProAberto(true);
                   }}
                 >
-                  <MaterialCommunityIcons name="lock" color="#B99AFF" size={22} />
+                  <MaterialCommunityIcons
+                    name="lock"
+                    color="#B99AFF"
+                    size={22}
+                  />
 
                   <View style={styles.salarioInformacoes}>
                     <Text style={styles.salarioOculto}>R$ ••••••</Text>
 
                     <Text style={styles.textoBloqueado}>
-                      Disponível no RecrutaDEV PRO
+                      Disponível no Devinder PRO
                     </Text>
                   </View>
 
@@ -252,7 +255,7 @@ export default function Recrutador() {
           <View style={styles.modalPro}>
             <MaterialCommunityIcons name="crown" size={48} color="#B99AFF" />
 
-            <Text style={styles.tituloPro}>RecrutaDEV PRO</Text>
+            <Text style={styles.tituloPro}>Devinder PRO</Text>
 
             <Text style={styles.statusPlano}>
               Status atual:{" "}
