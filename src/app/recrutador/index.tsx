@@ -229,7 +229,7 @@ export default function Recrutador() {
                     <Text style={styles.salarioOculto}>R$ ••••••</Text>
 
                     <Text style={styles.textoBloqueado}>
-                      Disponível no RecrutaDEV PRO
+                      Disponível no Devinder PRO
                     </Text>
                   </View>
 
@@ -256,7 +256,7 @@ export default function Recrutador() {
           <View style={styles.modalPro}>
             <MaterialCommunityIcons name="crown" size={48} color="#B99AFF" />
 
-            <Text style={styles.tituloPro}>RecrutaDEV PRO</Text>
+            <Text style={styles.tituloPro}>Devinder PRO</Text>
 
             <Text style={styles.statusPlano}>
               Status atual:{" "}
