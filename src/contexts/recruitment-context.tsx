@@ -95,6 +95,8 @@ type RecruitmentContextData = {
   adicionarCandidato: (dados: Omit<Candidate, "id">) => Candidate;
   atualizarCandidato: (  id: string,  dados: Omit<Candidate, "id">) => void;
   excluirCandidato: (id: string) => void;
+  perfilAtualId: string | null;
+  sairDoPerfil: () => Promise<void>;
 };
 
 const RecruitmentContext = createContext<RecruitmentContextData | undefined>(
@@ -102,6 +104,7 @@ const RecruitmentContext = createContext<RecruitmentContextData | undefined>(
 );
 
 export function RecruitmentProvider({ children }: { children: ReactNode }) {
+  const [perfilAtualId, setPerfilAtualId] = useState<string | null>(null);
   const [carregado, setCarregado] = useState(false);
   const [candidatos, setCandidatos] = useState<Candidate[]>(candidatosIniciais);
   const [aprovadosIds, setAprovadosIds] = useState<string[]>([]);
@@ -156,7 +159,24 @@ export function RecruitmentProvider({ children }: { children: ReactNode }) {
     });
   }, [candidatos, carregado]);
 
+  useEffect(() => {
+    AsyncStorage.getItem("@recrutadev:perfil-atual")
+      .then((id) => setPerfilAtualId(id))
+      .catch((erro) => {
+        console.error("Erro ao carregar perfil atual:", erro);
+      });
+  }, []);
 
+  const sairDoPerfil = async () => {
+    try {
+      await AsyncStorage.removeItem("@recrutadev:perfil-atual");
+      setPerfilAtualId(null);
+    } catch (erro) {
+      console.error("Erro ao sair do perfil:", erro);
+    }
+  };
+
+  
 
   const adicionarCandidato = (dados: Omit<Candidate, "id">) => {
     const novoCandidato: Candidate = {
@@ -165,6 +185,12 @@ export function RecruitmentProvider({ children }: { children: ReactNode }) {
     };
 
     setCandidatos((atuais) => [...atuais, novoCandidato]);
+    setPerfilAtualId(novoCandidato.id);
+
+    AsyncStorage.setItem("@recrutadev:perfil-atual", novoCandidato.id)
+      .catch((erro) => {
+        console.error("Erro ao salvar perfil atual:", erro);
+      });
 
     return novoCandidato;
   };
@@ -191,9 +217,23 @@ export function RecruitmentProvider({ children }: { children: ReactNode }) {
       atuais.filter((candidatoId) => candidatoId !== id)
     );
 
+    setDescartadosIds((atuais) =>
+      atuais.filter((candidatoId) => candidatoId !== id)
+    );
+
     setPrioritariosIds((atuais) =>
       atuais.filter((candidatoId) => candidatoId !== id)
     );
+
+    setUltimoDescartadoId((atual) => (atual === id ? null : atual));
+
+    if (perfilAtualId === id) {
+      setPerfilAtualId(null);
+
+      AsyncStorage.removeItem("@recrutadev:perfil-atual").catch((erro) => {
+        console.error("Erro ao limpar perfil excluído:", erro);
+      });
+    }
   };
 
   
@@ -269,6 +309,8 @@ export function RecruitmentProvider({ children }: { children: ReactNode }) {
         adicionarCandidato,
         atualizarCandidato,
         excluirCandidato,
+        perfilAtualId,
+        sairDoPerfil,
       }}
     >
       {children}

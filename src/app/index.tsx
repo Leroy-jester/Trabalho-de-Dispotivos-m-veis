@@ -2,9 +2,11 @@ import logoImg from "@/assets/images/logo.png";
 import Button from "@/components/button";
 import { useRouter } from "expo-router";
 import { Image, StyleSheet, View } from "react-native";
+import { useRecruitment } from "@/contexts/recruitment-context";
 
 export default function Index() {
   const router = useRouter();
+  const { perfilAtualId } = useRecruitment();
 
   return (
     <View style={styles.container}>
@@ -16,7 +18,13 @@ export default function Index() {
         <Button
           label="Entrar como dev"
           color="#7C3DE8"
-          onPress={() => router.push("/dev-cadastro")}
+          onPress={() => {
+            if (perfilAtualId) {
+              router.push("/dev-perfil");
+            } else {
+              router.push("/dev-cadastro");
+            }
+          }}
         />
 
         <Button
