@@ -29,7 +29,6 @@ export default function Recrutador() {
     aprovar,
     descartar,
     disparar,
-    ultimoDescartadoId,
     desfazerDescarte,
   } = useRecruitment();
   const router = useRouter();

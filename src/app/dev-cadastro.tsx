@@ -1,9 +1,8 @@
+import { useRecruitment } from "@/contexts/recruitment-context";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import * as ImagePicker from "expo-image-picker";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useRecruitment } from "@/contexts/recruitment-context";
 import {
   Alert,
   Image,
@@ -17,6 +16,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const TOTAL_ETAPAS = 5;
 const LIMITE_FOTOS = 3;
@@ -67,28 +67,6 @@ function Campo({
 }
 
 export default function Dev() {
-  const [etapa, setEtapa] = useState(0);
-
-  const [fotos, setFotos] = useState<string[]>([]);
-
-  const [nome, setNome] = useState("");
-  const [email, setEmail] = useState("");
-  const [idade, setIdade] = useState("");
-  const [localizacao, setLocalizacao] = useState("");
-  const [sobreMim, setSobreMim] = useState("");
-
-  const [formacao, setFormacao] = useState("");
-  const [formacaoInicio, setFormacaoInicio] = useState("");
-  const [formacaoFim, setFormacaoFim] = useState("");
-
-  const [experiencia, setExperiencia] = useState("");
-  const [experienciaInicio, setExperienciaInicio] = useState("");
-  const [experienciaFim, setExperienciaFim] = useState("");
-
-  const [linguagens, setLinguagens] = useState("");
-  const [projetos, setProjetos] = useState("");
-  const [pretensaoSalarial, setPretensaoSalarial] = useState("");
-  const [redesSociais, setRedesSociais] = useState("");
   const { editarId } = useLocalSearchParams<{ editarId?: string }>();
 
   const {
@@ -100,6 +78,79 @@ export default function Dev() {
   const candidatoEdicao = candidatos.find(
     (item) => item.id === editarId
   );
+
+  const [etapa, setEtapa] = useState(0);
+
+  const [fotos, setFotos] = useState<string[]>(() => candidatoEdicao?.fotos ?? []);
+
+  const [nome, setNome] = useState(() => candidatoEdicao?.nome ?? "");
+  const [email, setEmail] = useState(() => candidatoEdicao?.email ?? "");
+  const [idade, setIdade] = useState(() =>
+    candidatoEdicao?.idade != null ? String(candidatoEdicao.idade) : ""
+  );
+  const [localizacao, setLocalizacao] = useState(
+    () => candidatoEdicao?.localizacao ?? ""
+  );
+  const [sobreMim, setSobreMim] = useState(() => candidatoEdicao?.sobre ?? "");
+
+  const [formacao, setFormacao] = useState(() => candidatoEdicao?.formacao ?? "");
+  const [formacaoInicio, setFormacaoInicio] = useState(
+    () => candidatoEdicao?.formacaoInicio ?? ""
+  );
+  const [formacaoFim, setFormacaoFim] = useState(
+    () => candidatoEdicao?.formacaoFim ?? ""
+  );
+
+  const [experiencia, setExperiencia] = useState(
+    () => candidatoEdicao?.experiencia ?? ""
+  );
+  const [experienciaInicio, setExperienciaInicio] = useState(
+    () => candidatoEdicao?.experienciaInicio ?? ""
+  );
+  const [experienciaFim, setExperienciaFim] = useState(
+    () => candidatoEdicao?.experienciaFim ?? ""
+  );
+
+  const [linguagens, setLinguagens] = useState(
+    () => candidatoEdicao?.linguagens ?? ""
+  );
+  const [projetos, setProjetos] = useState(() => candidatoEdicao?.projetos ?? "");
+  const [pretensaoSalarial, setPretensaoSalarial] = useState(
+    () => candidatoEdicao?.pretensaoSalarial ?? ""
+  );
+  const [redesSociais, setRedesSociais] = useState(
+    () => candidatoEdicao?.redesSociais ?? ""
+  );
+
+  const [carregadoId, setCarregadoId] = useState<string | null>(
+    () => (editarId && candidatoEdicao ? candidatoEdicao.id : null)
+  );
+
+  if (editarId && candidatoEdicao && carregadoId !== candidatoEdicao.id) {
+    setCarregadoId(candidatoEdicao.id);
+    setNome(candidatoEdicao.nome ?? "");
+    setEmail(candidatoEdicao.email ?? "");
+    setIdade(
+      candidatoEdicao.idade != null ? String(candidatoEdicao.idade) : ""
+    );
+    setLocalizacao(candidatoEdicao.localizacao ?? "");
+    setSobreMim(candidatoEdicao.sobre ?? "");
+
+    setFormacao(candidatoEdicao.formacao ?? "");
+    setFormacaoInicio(candidatoEdicao.formacaoInicio ?? "");
+    setFormacaoFim(candidatoEdicao.formacaoFim ?? "");
+
+    setExperiencia(candidatoEdicao.experiencia ?? "");
+    setExperienciaInicio(candidatoEdicao.experienciaInicio ?? "");
+    setExperienciaFim(candidatoEdicao.experienciaFim ?? "");
+
+    setLinguagens(candidatoEdicao.linguagens ?? "");
+    setProjetos(candidatoEdicao.projetos ?? "");
+    setPretensaoSalarial(candidatoEdicao.pretensaoSalarial ?? "");
+    setRedesSociais(candidatoEdicao.redesSociais ?? "");
+    setFotos(candidatoEdicao.fotos ?? []);
+  }
+
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const scrollRef = useRef<ScrollView>(null);
@@ -133,30 +184,6 @@ export default function Dev() {
   ];
 
   const progresso = ((etapa + 1) / TOTAL_ETAPAS) * 100;
-
-  useEffect(() => {
-    if (!editarId || !candidatoEdicao) return;
-
-    setNome(candidatoEdicao.nome ?? "");
-    setEmail(candidatoEdicao.email ?? "");
-    setIdade(String(candidatoEdicao.idade ?? ""));
-    setLocalizacao(candidatoEdicao.localizacao ?? "");
-    setSobreMim(candidatoEdicao.sobre ?? "");
-
-    setFormacao(candidatoEdicao.formacao ?? "");
-    setFormacaoInicio(candidatoEdicao.formacaoInicio ?? "");
-    setFormacaoFim(candidatoEdicao.formacaoFim ?? "");
-
-    setExperiencia(candidatoEdicao.experiencia ?? "");
-    setExperienciaInicio(candidatoEdicao.experienciaInicio ?? "");
-    setExperienciaFim(candidatoEdicao.experienciaFim ?? "");
-
-    setLinguagens(candidatoEdicao.linguagens ?? "");
-    setProjetos(candidatoEdicao.projetos ?? "");
-    setPretensaoSalarial(candidatoEdicao.pretensaoSalarial ?? "");
-    setRedesSociais(candidatoEdicao.redesSociais ?? "");
-    setFotos(candidatoEdicao.fotos ?? []);
-  }, [editarId, candidatoEdicao]);
 
   async function selecionarDaGaleria() {
     const restantes = LIMITE_FOTOS - fotos.length;

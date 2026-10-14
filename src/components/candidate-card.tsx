@@ -3,25 +3,25 @@ import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 
 import Animated, {
-    Extrapolation,
-    interpolate,
-    useAnimatedStyle,
-    useSharedValue,
-    withDelay,
-    withSequence,
-    withSpring,
-    withTiming,
+  Extrapolation,
+  interpolate,
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withSequence,
+  withSpring,
+  withTiming,
 } from "react-native-reanimated";
 
 import { scheduleOnRN } from "react-native-worklets";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import {
-    Pressable,
-    StyleSheet,
-    Text,
-    useWindowDimensions,
-    View,
+  Pressable,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
 } from "react-native";
 
 type Candidato = {
@@ -65,30 +65,37 @@ export default function CandidateCard({
   const destaqueProgress = useSharedValue(0);
   const destaqueAtivo = useSharedValue(false);
   const { width } = useWindowDimensions();
-  const [zoomAtivo, setZoomAtivo] = useState(false);
   const infoOculta = useSharedValue(false);
   const scale = useSharedValue(1);
   const savedScale = useSharedValue(1);
 
   useEffect(() => {
-    scale.value = 1;
-    savedScale.value = 1;
-    infoOculta.value = false;
-    setZoomAtivo(false);
-    translateX.value = 0;
-    translateY.value = 0;
-  }, [candidato.id, fotoIndex]);
+    scale.set(1);
+    savedScale.set(1);
+    infoOculta.set(false);
+    translateX.set(0);
+    translateY.set(0);
+  }, [
+    candidato.id,
+    fotoIndex,
+    infoOculta,
+    savedScale,
+    scale,
+    translateX,
+    translateY,
+  ]);
 
   const destaqueStyle = useAnimatedStyle(() => {
+    const progresso = destaqueProgress.get();
     const escala = interpolate(
-      destaqueProgress.value,
+      progresso,
       [0, 0.5, 1],
       [0.4, 1.2, 1],
       Extrapolation.CLAMP,
     );
 
     const opacidade = interpolate(
-      destaqueProgress.value,
+      progresso,
       [0, 0.2, 1],
       [0, 1, 1],
       Extrapolation.CLAMP,
@@ -108,29 +115,35 @@ export default function CandidateCard({
     }
 
     // Evita disparar mais de uma vez durante a animação.
-    if (destaqueAtivo.value) {
+    if (destaqueAtivo.get()) {
       return;
     }
 
-    destaqueAtivo.value = true;
-    destaqueProgress.value = 0;
+    destaqueAtivo.set(true);
+    destaqueProgress.set(0);
 
-    destaqueProgress.value = withSequence(
-      withTiming(1, { duration: 220 }),
-      withDelay(
-        300,
-        withTiming(0, { duration: 200 }, (finished) => {
-          destaqueAtivo.value = false;
+    destaqueProgress.set(
+      withSequence(
+        withTiming(1, { duration: 220 }),
+        withDelay(
+          300,
+          withTiming(0, { duration: 200 }, (finished) => {
+            destaqueAtivo.set(false);
 
-          if (finished) {
-            scheduleOnRN(onFire);
-          }
-        }),
+            if (finished) {
+              scheduleOnRN(onFire);
+            }
+          }),
+        ),
       ),
     );
   }
   const animatedImageStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
+    transform: [{ scale: scale.get() }],
+  }));
+
+  const animatedInfoStyle = useAnimatedStyle(() => ({
+    opacity: infoOculta.get() ? 0 : 1,
   }));
 
   const panGesture = Gesture.Pan()
@@ -138,11 +151,12 @@ export default function CandidateCard({
     .activeOffsetX([-10, 10])
     .activeOffsetY([-15, 15])
     .onUpdate((event) => {
-      translateX.value = event.translationX;
-      translateY.value =
+      translateX.set(event.translationX);
+      translateY.set(
         event.translationY < 0
           ? event.translationY
-          : event.translationY * 0.2;
+          : event.translationY * 0.2,
+      );
     })
     .onEnd((event) => {
       const passouDoLimite = Math.abs(event.translationX) > width * 0.25;
@@ -159,7 +173,7 @@ export default function CandidateCard({
         isHorizontal &&
         Math.abs(event.translationX) >= Math.abs(event.translationY)
       ) {
-        translateY.value = withSpring(0);
+        translateY.set(withSpring(0));
         const direcao =
           event.translationX !== 0
             ? event.translationX > 0
@@ -169,46 +183,46 @@ export default function CandidateCard({
               ? 1
               : -1;
 
-        translateX.value = withTiming(
-          direcao * (width + 100),
-          { duration: 220 },
-          (finished) => {
-            if (finished) {
-              if (direcao > 0) {
-                scheduleOnRN(onApprove);
-              } else {
-                scheduleOnRN(onReject);
+        translateX.set(
+          withTiming(
+            direcao * (width + 100),
+            { duration: 220 },
+            (finished) => {
+              if (finished) {
+                if (direcao > 0) {
+                  scheduleOnRN(onApprove);
+                } else {
+                  scheduleOnRN(onReject);
+                }
               }
-            }
-          },
+            },
+          ),
         );
       } else if (swipeParaCima) {
         // Swipe para cima abre a Bottom Sheet sem aprovar ou descartar
-        translateX.value = withSpring(0);
-        translateY.value = withSpring(0);
+        translateX.set(withSpring(0));
+        translateY.set(withSpring(0));
         scheduleOnRN(onShowDetails);
       } else {
-        translateX.value = withSpring(0);
-        translateY.value = withSpring(0);
+        translateX.set(withSpring(0));
+        translateY.set(withSpring(0));
       }
     });
 
   const pinchGesture = Gesture.Pinch()
     .onUpdate((event) => {
-      const novoZoom = Math.max(1, Math.min(savedScale.value * event.scale, 3));
+      const novoZoom = Math.max(1, Math.min(savedScale.get() * event.scale, 3));
 
-      scale.value = novoZoom;
+      scale.set(novoZoom);
 
-      if (novoZoom > 1.08 && !infoOculta.value) {
-        infoOculta.value = true;
-        scheduleOnRN(setZoomAtivo, true);
-      } else if (novoZoom <= 1.08 && infoOculta.value) {
-        infoOculta.value = false;
-        scheduleOnRN(setZoomAtivo, false);
+      if (novoZoom > 1.08 && !infoOculta.get()) {
+        infoOculta.set(true);
+      } else if (novoZoom <= 1.08 && infoOculta.get()) {
+        infoOculta.set(false);
       }
     })
     .onEnd(() => {
-      savedScale.value = scale.value;
+      savedScale.set(scale.get());
     });
 
   const fotos =
@@ -232,15 +246,17 @@ export default function CandidateCard({
 
   const cardGesture = Gesture.Race(panGesture, doubleTapGesture);
   const animatedCardStyle = useAnimatedStyle(() => {
+    const translX = translateX.get();
+    const translY = translateY.get();
     const rotacao = interpolate(
-      translateX.value,
+      translX,
       [-width, 0, width],
       [-12, 0, 12],
       Extrapolation.CLAMP,
     );
 
     const opacidade = interpolate(
-      Math.abs(translateX.value),
+      Math.abs(translX),
       [0, width],
       [1, 0.75],
       Extrapolation.CLAMP,
@@ -248,8 +264,8 @@ export default function CandidateCard({
 
     return {
       transform: [
-        { translateX: translateX.value },
-        { translateY: translateY.value },
+        { translateX: translX },
+        { translateY: translY },
         { rotate: `${rotacao}deg` },
       ],
       opacity: opacidade,
@@ -319,61 +335,62 @@ export default function CandidateCard({
               </View>
             )}
 
-            {!zoomAtivo && (
-              <View style={styles.informacoes}>
-                <View style={styles.cabecalhoInfo}>
-                  <Text style={styles.nome} numberOfLines={1}>
-                    {candidato.nome}, {candidato.idade}
-                  </Text>
-                  <Pressable
-                    accessibilityLabel="Informações do candidato"
-                    accessibilityRole="button"
-                    style={styles.botaoInfo}
-                    onPress={onShowDetails}
-                  >
-                    <MaterialCommunityIcons
-                      name="information-outline"
-                      size={24}
-                      color="#FFFFFF"
-                    />
-                  </Pressable>
-                </View>
-
-                <Text style={styles.localizacao}>
-                  <MaterialCommunityIcons
-                    name="map-marker"
-                    size={16}
-                    color="#FFFFFF"
-                  />{" "}
-                  {candidato.localizacao}
+            <Animated.View
+              pointerEvents="box-none"
+              style={[styles.informacoes, animatedInfoStyle]}
+            >
+              <View style={styles.cabecalhoInfo}>
+                <Text style={styles.nome} numberOfLines={1}>
+                  {candidato.nome}, {candidato.idade}
                 </Text>
-
-                <Text style={styles.resumo} numberOfLines={2}>
-                  {candidato.sobre}
-                </Text>
-
-                <View style={styles.tags}>
-                  {candidato.linguagens.split(", ").map((linguagem) => (
-                    <View key={linguagem} style={styles.tag}>
-                      <Text style={styles.textoTag}>{linguagem}</Text>
-                    </View>
-                  ))}
-                </View>
-
                 <Pressable
-                  accessibilityLabel="Ver perfil completo"
-                  style={styles.botaoDetalhes}
+                  accessibilityLabel="Informações do candidato"
+                  accessibilityRole="button"
+                  style={styles.botaoInfo}
                   onPress={onShowDetails}
                 >
                   <MaterialCommunityIcons
-                    name="chevron-up"
-                    size={30}
+                    name="information-outline"
+                    size={24}
                     color="#FFFFFF"
                   />
-                  <Text style={styles.textoDetalhes}>Ver perfil completo</Text>
                 </Pressable>
               </View>
-            )}
+
+              <Text style={styles.localizacao}>
+                <MaterialCommunityIcons
+                  name="map-marker"
+                  size={16}
+                  color="#FFFFFF"
+                />{" "}
+                {candidato.localizacao}
+              </Text>
+
+              <Text style={styles.resumo} numberOfLines={2}>
+                {candidato.sobre}
+              </Text>
+
+              <View style={styles.tags}>
+                {candidato.linguagens.split(", ").map((linguagem) => (
+                  <View key={linguagem} style={styles.tag}>
+                    <Text style={styles.textoTag}>{linguagem}</Text>
+                  </View>
+                ))}
+              </View>
+
+              <Pressable
+                accessibilityLabel="Ver perfil completo"
+                style={styles.botaoDetalhes}
+                onPress={onShowDetails}
+              >
+                <MaterialCommunityIcons
+                  name="chevron-up"
+                  size={30}
+                  color="#FFFFFF"
+                />
+                <Text style={styles.textoDetalhes}>Ver perfil completo</Text>
+              </Pressable>
+            </Animated.View>
           </View>
           <Animated.View
             pointerEvents="none"
