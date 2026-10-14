@@ -25,6 +25,7 @@ export default function Recrutador() {
     descartadosIds,
     disparos,
     isPro,
+    togglePro,
     aprovar,
     descartar,
     disparar,
@@ -124,10 +125,16 @@ export default function Recrutador() {
           Devinder
         </Text>
 
-        <Text style={styles.contador}>
-          {indice + 1} de {candidatos.length} · Disparos{" "}
-          {isPro ? "ilimitados" : `${disparos}/3`}
-        </Text>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Abrir detalhes do plano"
+          onPress={() => setProAberto(true)}
+        >
+          <Text style={styles.contador}>
+            {indice + 1} de {candidatos.length} · Disparos{" "}
+            {isPro ? "ilimitados" : `${disparos}/3`}
+          </Text>
+        </Pressable>
       </View>
 
       {/* Card reutilizável */}
@@ -199,29 +206,37 @@ export default function Recrutador() {
 
               <Text style={styles.subtitulo}>Pretensão salarial</Text>
 
-              <Pressable
-                style={styles.salarioBloqueado}
-                onPress={() => {
-                  setBioAberta(false);
-                  setProAberto(true);
-                }}
-              >
-                <MaterialCommunityIcons name="lock" color="#B99AFF" size={22} />
-
-                <View style={styles.salarioInformacoes}>
-                  <Text style={styles.salarioOculto}>R$ ••••••</Text>
-
-                  <Text style={styles.textoBloqueado}>
-                    Disponível no RecrutaDEV PRO
+              {isPro ? (
+                <View style={styles.salarioLiberado}>
+                  <Text style={styles.salarioValor}>
+                    {candidato.pretensaoSalarial}
                   </Text>
                 </View>
+              ) : (
+                <Pressable
+                  style={styles.salarioBloqueado}
+                  onPress={() => {
+                    setBioAberta(false);
+                    setProAberto(true);
+                  }}
+                >
+                  <MaterialCommunityIcons name="lock" color="#B99AFF" size={22} />
 
-                <MaterialCommunityIcons
-                  name="chevron-right"
-                  color="#FFFFFF"
-                  size={24}
-                />
-              </Pressable>
+                  <View style={styles.salarioInformacoes}>
+                    <Text style={styles.salarioOculto}>R$ ••••••</Text>
+
+                    <Text style={styles.textoBloqueado}>
+                      Disponível no RecrutaDEV PRO
+                    </Text>
+                  </View>
+
+                  <MaterialCommunityIcons
+                    name="chevron-right"
+                    color="#FFFFFF"
+                    size={24}
+                  />
+                </Pressable>
+              )}
             </ScrollView>
           </View>
         </View>
@@ -240,6 +255,13 @@ export default function Recrutador() {
 
             <Text style={styles.tituloPro}>RecrutaDEV PRO</Text>
 
+            <Text style={styles.statusPlano}>
+              Status atual:{" "}
+              <Text style={isPro ? styles.statusPro : styles.statusFree}>
+                {isPro ? "PRO Ativo" : "Free"}
+              </Text>
+            </Text>
+
             <Text style={styles.textoPro}>
               Desbloqueie a pretensão salarial, a análise do candidato e
               recursos exclusivos de recrutamento.
@@ -254,10 +276,24 @@ export default function Recrutador() {
             </Text>
 
             <Pressable
-              style={styles.botaoPro}
+              style={[
+                styles.botaoTogglePro,
+                isPro ? styles.botaoDesativarPro : styles.botaoAtivarPro,
+              ]}
+              onPress={() => togglePro()}
+            >
+              <Text style={styles.textoBotao}>
+                {isPro
+                  ? "Desativar PRO (Simular Free)"
+                  : "Ativar plano PRO (Simular)"}
+              </Text>
+            </Pressable>
+
+            <Pressable
+              style={styles.botaoFecharPro}
               onPress={() => setProAberto(false)}
             >
-              <Text style={styles.textoBotao}>Entendi</Text>
+              <Text style={styles.textoBotaoFechar}>Fechar</Text>
             </Pressable>
           </View>
         </View>
@@ -397,6 +433,17 @@ const styles = StyleSheet.create({
     gap: 12,
     marginBottom: 25,
   },
+  salarioLiberado: {
+    backgroundColor: "#29232F",
+    borderRadius: 10,
+    padding: 14,
+    marginBottom: 25,
+  },
+  salarioValor: {
+    color: "#D4C5F5",
+    fontWeight: "bold",
+    fontSize: 17,
+  },
   salarioInformacoes: {
     flex: 1,
   },
@@ -432,12 +479,50 @@ const styles = StyleSheet.create({
     marginTop: 12,
     marginBottom: 16,
   },
+  statusPlano: {
+    color: "#AAAAAA",
+    fontSize: 13,
+    marginBottom: 16,
+  },
+  statusPro: {
+    color: "#B99AFF",
+    fontWeight: "bold",
+  },
+  statusFree: {
+    color: "#FFFFFF",
+    fontWeight: "bold",
+  },
   textoPro: {
     color: "#D1D1D1",
     fontSize: 14,
     lineHeight: 21,
     textAlign: "center",
     marginBottom: 12,
+  },
+  botaoTogglePro: {
+    width: "100%",
+    paddingVertical: 14,
+    borderRadius: 8,
+    alignItems: "center",
+    marginTop: 8,
+  },
+  botaoAtivarPro: {
+    backgroundColor: "#7C3DE8",
+  },
+  botaoDesativarPro: {
+    backgroundColor: "#3A2E4C",
+    borderWidth: 1,
+    borderColor: "#7C3DE8",
+  },
+  botaoFecharPro: {
+    marginTop: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 20,
+    alignItems: "center",
+  },
+  textoBotaoFechar: {
+    color: "#AAAAAA",
+    fontSize: 14,
   },
   botaoPro: {
     backgroundColor: "#7C3DE8",

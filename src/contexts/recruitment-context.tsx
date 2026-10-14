@@ -86,6 +86,7 @@ type RecruitmentContextData = {
   prioritariosIds: string[];
   disparos: number;
   isPro: boolean;
+  togglePro: () => void;
   aprovar: (id: string) => void;
   descartar: (id: string) => void;
   disparar: (id: string) => boolean;
@@ -107,9 +108,14 @@ export function RecruitmentProvider({ children }: { children: ReactNode }) {
   const [descartadosIds, setDescartadosIds] = useState<string[]>([]);
   const [prioritariosIds, setPrioritariosIds] = useState<string[]>([]);
   const [disparos, setDisparos] = useState(0);
+  const [isPro, setIsPro] = useState(false);
   const [ultimoDescartadoId, setUltimoDescartadoId] = useState<string | null>(
     null,
   );
+
+  const togglePro = () => {
+    setIsPro((atual) => !atual);
+  };
 
   useEffect(() => {
     async function carregar() {
@@ -141,8 +147,7 @@ export function RecruitmentProvider({ children }: { children: ReactNode }) {
     });
   }, [candidatos, carregado]);
 
-  // Por enquanto, o plano é simulado como Free.
-  const isPro = false;
+
 
   const adicionarCandidato = (dados: Omit<Candidate, "id">) => {
     const novoCandidato: Candidate = {
@@ -246,6 +251,7 @@ export function RecruitmentProvider({ children }: { children: ReactNode }) {
         prioritariosIds,
         disparos,
         isPro,
+        togglePro,
         ultimoDescartadoId,
         aprovar,
         descartar,

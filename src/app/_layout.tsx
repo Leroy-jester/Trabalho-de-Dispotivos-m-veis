@@ -1,6 +1,6 @@
+import { RecruitmentProvider } from "@/contexts/recruitment-context";
 import { Stack } from "expo-router";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { RecruitmentProvider } from "../contexts/recruitment-context";
 
 export default function RootLayout() {
   return (

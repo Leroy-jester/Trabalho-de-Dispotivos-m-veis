@@ -60,6 +60,7 @@ export default function CandidateCard({
   isPro,
 }: Props) {
   const translateX = useSharedValue(0);
+  const translateY = useSharedValue(0);
   const destaqueProgress = useSharedValue(0);
   const destaqueAtivo = useSharedValue(false);
   const { width } = useWindowDimensions();
@@ -73,6 +74,8 @@ export default function CandidateCard({
     savedScale.value = 1;
     infoOculta.value = false;
     setZoomAtivo(false);
+    translateX.value = 0;
+    translateY.value = 0;
   }, [candidato.id, fotoIndex]);
 
   const destaqueStyle = useAnimatedStyle(() => {
@@ -132,15 +135,30 @@ export default function CandidateCard({
   const panGesture = Gesture.Pan()
     .maxPointers(1)
     .activeOffsetX([-10, 10])
+    .activeOffsetY([-15, 15])
     .onUpdate((event) => {
       translateX.value = event.translationX;
+      translateY.value =
+        event.translationY < 0
+          ? event.translationY
+          : event.translationY * 0.2;
     })
     .onEnd((event) => {
       const passouDoLimite = Math.abs(event.translationX) > width * 0.25;
-
       const movimentoRapido = Math.abs(event.velocityX) > 900;
+      const isHorizontal = passouDoLimite || movimentoRapido;
 
-      if (passouDoLimite || movimentoRapido) {
+      const swipeParaCima =
+        (event.translationY < -80 ||
+          (event.translationY < -40 && event.velocityY < -600)) &&
+        Math.abs(event.translationY) > Math.abs(event.translationX);
+
+      // Prioridade absoluta para swipe horizontal (aprovar/descartar) quando dominante
+      if (
+        isHorizontal &&
+        Math.abs(event.translationX) >= Math.abs(event.translationY)
+      ) {
+        translateY.value = withSpring(0);
         const direcao =
           event.translationX !== 0
             ? event.translationX > 0
@@ -163,8 +181,14 @@ export default function CandidateCard({
             }
           },
         );
+      } else if (swipeParaCima) {
+        // Swipe para cima abre a Bottom Sheet sem aprovar ou descartar
+        translateX.value = withSpring(0);
+        translateY.value = withSpring(0);
+        scheduleOnRN(onShowDetails);
       } else {
         translateX.value = withSpring(0);
+        translateY.value = withSpring(0);
       }
     });
 
@@ -189,13 +213,24 @@ export default function CandidateCard({
   const doubleTapGesture = Gesture.Tap()
     .numberOfTaps(2)
     .maxDuration(300)
+    .maxDelay(250)
     .onEnd((_event, success) => {
       if (success) {
         scheduleOnRN(handleFire);
       }
     });
 
-  const cardGesture = Gesture.Race(panGesture, doubleTapGesture);
+  const singleTapGesture = Gesture.Tap()
+    .numberOfTaps(1)
+    .maxDuration(300)
+    .onEnd((_event, success) => {
+      if (success) {
+        scheduleOnRN(onShowDetails);
+      }
+    });
+
+  const tapGestures = Gesture.Exclusive(doubleTapGesture, singleTapGesture);
+  const cardGesture = Gesture.Race(panGesture, tapGestures);
   const animatedCardStyle = useAnimatedStyle(() => {
     const rotacao = interpolate(
       translateX.value,
@@ -214,6 +249,7 @@ export default function CandidateCard({
     return {
       transform: [
         { translateX: translateX.value },
+        { translateY: translateY.value },
         { rotate: `${rotacao}deg` },
       ],
       opacity: opacidade,
