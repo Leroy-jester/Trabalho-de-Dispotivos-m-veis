@@ -4,7 +4,7 @@ Aplicativo mobile desenvolvido com React Native, Expo e TypeScript. O Devinder p
 
 ## Protótipo no Figma
 
-(Link do Figma: INSERIR LINK AQUI)
+Link do Figma: https://www.figma.com/design/BXCS9xKIastcjzZY3n6ci6/Devinder?node-id=0-1&t=6fBipoXUDteyAMXc-1
 
 ## Capturas de tela
 
